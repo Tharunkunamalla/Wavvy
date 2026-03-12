@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Users, MessageSquare, Video, Github } from 'lucide-react';
+import { Play, Plus, Search, Video, Github, Clock, Monitor } from 'lucide-react';
 
 const LandingPage = () => {
   const [roomId, setRoomId] = useState('');
+  const [myRooms, setMyRooms] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedRooms = JSON.parse(localStorage.getItem('myRooms') || '[]');
+    setMyRooms(savedRooms);
+  }, []);
 
   const handleCreateRoom = () => {
     const newRoomId = Math.random().toString(36).substring(2, 9);
+    const newRoom = { id: newRoomId, createdAt: new Date().toISOString(), name: 'Watch Party' };
+    const updatedRooms = [newRoom, ...myRooms];
+    localStorage.setItem('myRooms', JSON.stringify(updatedRooms));
     navigate(`/room/${newRoomId}`);
   };
 
@@ -19,82 +28,117 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
-      {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] -z-10 animate-pulse-slow"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[120px] -z-10 animate-pulse-slow"></div>
-
-      {/* Header */}
-      <header className="absolute top-0 w-full p-8 flex justify-between items-center max-w-7xl">
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      {/* Top Navigation */}
+      <nav className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-black/50 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-            <Play className="text-white fill-current" size={20} />
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+            <Play className="text-black fill-current" size={16} />
           </div>
-          <span className="text-2xl font-bold tracking-tight">wavvy</span>
+          <span className="text-xl font-black tracking-tighter italic">Wavvy</span>
         </div>
-        <a href="https://github.com/Tharunkunamalla/Wavvy" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors">
-          <Github size={24} />
-        </a>
-      </header>
+        <div className="flex items-center gap-6">
+          <a href="https://github.com/Tharunkunamalla/Wavvy" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors">
+            <Github size={20} />
+          </a>
+          <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold">
+            U
+          </div>
+        </div>
+      </nav>
 
-      {/* Hero Section */}
-      <main className="max-w-4xl text-center z-10">
-        <h1 className="text-6xl md:text-7xl font-bold mb-6 tracking-tight leading-tight">
-          Watch Videos Together <br />
-          <span className="text-gradient">In Perfect Sync</span>
-        </h1>
-        <p className="text-xl text-white/60 mb-10 max-w-2xl mx-auto">
-          Synchronize YouTube and direct video links with friends. 
-          Real-time chat, video calls, and zero latency watch parties.
-        </p>
+      <main className="flex-1 max-w-6xl w-full mx-auto p-8 md:p-12">
+        {/* Welcome Header */}
+        <section className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-2">Welcome back!</h1>
+          <p className="text-white/40 text-lg">Create a room or join one to start watching together</p>
+        </section>
 
-        <div className="flex flex-col md:flex-row gap-4 justify-center items-stretch max-w-lg mx-auto mb-16">
+        {/* Action Grid */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+          {/* Create Room Card */}
           <button 
             onClick={handleCreateRoom}
-            className="btn-primary flex-1 flex items-center justify-center gap-2"
+            className="group relative flex flex-col items-center justify-center p-12 bg-white/5 border border-white/10 rounded-3xl hover:bg-primary/5 hover:border-primary/30 transition-all duration-500 overflow-hidden"
           >
-            <Play size={20} />
-            Create Watch Room
+            <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-500"></div>
+            <div className="w-16 h-16 bg-white/10 group-hover:bg-primary group-hover:scale-110 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300">
+              <Plus className="text-white group-hover:text-black" size={32} />
+            </div>
+            <h3 className="text-2xl font-bold mb-2 z-10">Create New Room</h3>
+            <p className="text-white/30 text-sm z-10">Start a private party instantly</p>
           </button>
-          
-          <form onSubmit={handleJoinRoom} className="flex-1 flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Enter Room ID" 
-              className="input-field flex-1"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-            />
-            <button type="submit" className="btn-secondary px-4">
-              Join
-            </button>
-          </form>
-        </div>
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          <FeatureCard 
-            icon={<Users className="text-primary" size={24} />}
-            title="Room Management"
-            desc="Create private rooms and invite friends with a single link."
-          />
-          <FeatureCard 
-            icon={<MessageSquare className="text-secondary" size={24} />}
-            title="Live Chat"
-            desc="Chat in real-time while you enjoy your favorite content."
-          />
-          <FeatureCard 
-            icon={<Video className="text-accent" size={24} />}
-            title="Video Calls"
-            desc="See each other's reactions with integrated peer video calling."
-          />
-        </div>
+          {/* Join Room Card */}
+          <div className="flex flex-col p-10 bg-white/5 border border-white/10 rounded-3xl justify-center">
+            <h3 className="text-xl font-bold mb-2">Join with Room ID</h3>
+            <p className="text-white/30 text-sm mb-6">Enter a code shared by your friend</p>
+            <form onSubmit={handleJoinRoom} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Enter room ID..." 
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary/50 transition-all text-sm"
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                />
+              </div>
+              <button type="submit" className="bg-white/10 hover:bg-white/20 text-white font-bold px-8 rounded-2xl transition-all border border-white/10">
+                Join Room
+              </button>
+            </form>
+          </div>
+        </section>
+
+        {/* My Rooms List */}
+        <section>
+          <div className="flex items-center gap-3 mb-8">
+            <Monitor className="text-primary" size={24} />
+            <h2 className="text-2xl font-bold">My Rooms</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {myRooms.length > 0 ? myRooms.map((room) => (
+              <div 
+                key={room.id}
+                onClick={() => navigate(`/room/${room.id}`)}
+                className="glass-card p-6 bg-white/5 border-white/10 hover:border-primary/40 cursor-pointer group transition-all"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{room.id}</h4>
+                  <div className="px-2 py-1 bg-primary/10 text-primary rounded text-[10px] font-bold uppercase tracking-wider">
+                    Active
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-white/30 text-sm mb-1">
+                  <Clock size={14} />
+                  <span>Created {new Date(room.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2 text-white/30 text-sm">
+                  <Video size={14} />
+                  <span>Room ID: {room.id}</span>
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-full py-12 text-center bg-white/5 border border-dashed border-white/10 rounded-3xl">
+                <p className="text-white/20">No recently created rooms found.</p>
+              </div>
+            )}
+          </div>
+        </section>
       </main>
 
       {/* Footer Decoration */}
-      <div className="absolute bottom-10 text-white/40 text-sm">
-        No downloads • No sign-up required • Purely Web-based
-      </div>
+      <footer className="p-8 text-center border-t border-white/5">
+        <div className="flex justify-center gap-8 text-white/20 text-xs font-medium uppercase tracking-widest mb-4">
+          <span>About Us</span>
+          <span>Contact Us</span>
+          <span>Terms</span>
+          <span>Privacy</span>
+        </div>
+        <p className="text-white/10 text-[10px] transform">© {new Date().getFullYear()} WAVVY. ALL RIGHTS RESERVED.</p>
+      </footer>
     </div>
   );
 };

@@ -3,11 +3,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #6366f1;
-  --color-secondary: #a855f7;
-  --color-background: #0f172a;
-  --color-surface: #1e293b;
-  --color-accent: #38bdf8;
+  --color-primary: #f97316; /* Vibrant Orange */
+  --color-secondary: #fb923c;
+  --color-background: #000000;
+  --color-surface: #121212;
+  --color-accent: #ffedd5;
   
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -18,7 +18,7 @@
 }
 
 body {
-  @apply bg-background text-white m-0 min-h-screen overflow-x-hidden;
+  @apply bg-black text-white m-0 min-h-screen overflow-x-hidden;
 }
 
 .glass-card {

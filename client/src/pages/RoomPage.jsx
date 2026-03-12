@@ -24,6 +24,7 @@ const RoomPage = () => {
   const localStreamRef = useRef(null);
   const [remoteStreams, setRemoteStreams] = useState({}); // { socketId: stream }
   const peerConnections = useRef({}); // { socketId: pc }
+  const [userId, setUserId] = useState(() => 'User_' + Math.random().toString(36).substring(2, 6));
 
   useEffect(() => {
     socketRef.current = io(SOCKET_URL);
@@ -51,8 +52,8 @@ const RoomPage = () => {
       setPlaylist(newPlaylist);
     });
 
-    socketRef.current.on('user-joined', ({ userId }) => {
-      setMembers(prev => [...new Set([...prev, userId])]);
+    socketRef.current.on('user-joined', ({ userId: joinedId }) => {
+      setMembers(prev => [...new Set([...prev, joinedId])]);
     });
 
     // WebRTC Signaling Handlers
@@ -120,6 +121,12 @@ const RoomPage = () => {
 
   const startCall = async () => {
     try {
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        setLocalStream(null);
+        localStreamRef.current = null;
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setLocalStream(stream);
       localStreamRef.current = stream;
@@ -136,7 +143,7 @@ const RoomPage = () => {
       socketRef.current.emit('send-message', {
         roomId,
         message: message.trim(),
-        sender: 'You'
+        sender: userId
       });
       setMessage('');
     }
@@ -194,41 +201,46 @@ const RoomPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-screen bg-black overflow-hidden font-sans">
       {/* Navbar */}
-      <nav className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-surface/50 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <Play className="text-white fill-current" size={16} />
+      <nav className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-black">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+            <Play className="text-primary fill-current" size={20} />
+            <span className="text-xl font-black tracking-tighter italic">Wavvy</span>
           </div>
-          <h1 className="text-xl font-bold">Room: <span className="text-primary">{roomId}</span></h1>
+          <div className="h-6 w-px bg-white/10"></div>
+          <div className="flex items-center gap-2">
+            <span className="text-white/40 text-sm font-medium uppercase tracking-widest">Room</span>
+            <span className="bg-white/10 px-3 py-1 rounded-full text-xs font-bold text-primary">{roomId}</span>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button 
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
-              alert("Link copied to clipboard!");
+              alert("Invitation link copied!");
             }}
-            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm"
+            className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/60 hover:text-white"
           >
-            <Link size={18} />
-            Copy Link
+            <Link size={20} />
           </button>
           <button 
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-sm"
+            className="flex items-center gap-2 text-white/40 hover:text-red-500 transition-colors text-sm font-bold"
           >
             <LogOut size={18} />
-            Leave
+            EXIT
           </button>
         </div>
       </nav>
 
-      {/* Main Content Area */}
+      {/* Main Layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Side: Video Player & Controls */}
+        {/* Playback Area */}
         <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl glass-card border-white/5">
+          {/* Video Container */}
+          <div className="relative aspect-video bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/5 group">
             {videoUrl ? (
               <ReactPlayer
                 ref={playerRef}
@@ -243,127 +255,116 @@ const RoomPage = () => {
                 onEnded={handleVideoEnd}
               />
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
-                <Video size={64} className="mb-4" />
-                <p className="text-lg">Paste a video link to start watching together</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/5">
+                <Video size={100} strokeWidth={1} className="mb-6 animate-pulse" />
+                <p className="text-xl font-medium tracking-tight">Ready for synchronized playback</p>
               </div>
             )}
           </div>
 
-          <div className="mt-6 flex gap-4">
-            <form onSubmit={handleUrlChange} className="flex-1 flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Paste YouTube or MP4 link here..." 
-                className="input-field flex-1"
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-              />
-              <button className="btn-primary py-2 px-8">Queue Video</button>
-            </form>
-          </div>
+          {/* Controls & Input */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <form onSubmit={handleUrlChange} className="relative group">
+                <input 
+                  type="text" 
+                  placeholder="Paste video link (YouTube, MP4)..." 
+                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl py-5 pl-6 pr-32 focus:outline-none focus:border-primary/50 transition-all font-medium text-lg"
+                  value={inputUrl}
+                  onChange={(e) => setInputUrl(e.target.value)}
+                />
+                <button className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-tighter">
+                  Load Stream
+                </button>
+              </form>
 
-          {/* Playlist Section */}
-          <div className="mt-8">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <Play size={20} className="text-primary" />
-              Up Next ({playlist.length})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {playlist.length > 0 ? playlist.map((url, idx) => (
-                <div key={idx} className="glass-card p-4 flex items-center gap-4 bg-white/5 border-white/5 group">
-                  <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-white/40 font-bold group-hover:bg-primary/20 group-hover:text-primary transition-colors">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-sm truncate text-white/70">{url}</p>
-                  </div>
+              {/* Streams Grid */}
+              {(localStream || Object.keys(remoteStreams).length > 0) && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {localStream && (
+                    <div className="aspect-video bg-zinc-900 rounded-2xl overflow-hidden border border-primary/20 relative">
+                      <video ref={(el) => { if (el) el.srcObject = localStream; }} autoPlay muted className="w-full h-full object-cover mirror" />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Me</span>
+                      </div>
+                    </div>
+                  )}
+                  {Object.entries(remoteStreams).map(([socketId, stream]) => (
+                    <div key={socketId} className="aspect-video bg-zinc-900 rounded-2xl overflow-hidden border border-white/5 relative">
+                      <video ref={(el) => { if (el) el.srcObject = stream; }} autoPlay className="w-full h-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/40">User_{socketId.substring(0, 4)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )) : (
-                <p className="text-white/30 text-sm">No videos in queue.</p>
               )}
             </div>
-          </div>
 
-          {/* Members & Controls Bar */}
-          <div className="mt-8 flex flex-col gap-6">
-            <div className="flex items-center justify-between p-4 glass-card">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-white/60">
-                  <Users size={20} />
-                  <span>{members.length + 1} वाचिंग</span>
-                </div>
-              </div>
+            <div className="space-y-6">
               <button 
                 onClick={startCall}
-                className={`py-2 px-6 rounded-xl flex items-center gap-2 transition-all ${localStream ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'btn-secondary'}`}
+                className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-tighter transition-all shadow-xl ${localStream ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'}`}
               >
-                <Video size={18} />
-                {localStream ? 'End Video Call' : 'Start Video Call'}
+                <Video size={20} />
+                {localStream ? 'End Camera' : 'Video Call'}
               </button>
-            </div>
 
-            {/* Video Streams Grid */}
-            {(localStream || Object.keys(remoteStreams).length > 0) && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {localStream && (
-                  <div className="aspect-video bg-black rounded-xl overflow-hidden border border-primary/30 relative shadow-xl">
-                    <video 
-                      ref={(el) => { if (el) el.srcObject = localStream; }} 
-                      autoPlay 
-                      muted 
-                      className="w-full h-full object-cover mirror"
-                    />
-                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded text-[10px] font-medium border border-white/10 uppercase tracking-wider">
-                      You (Host)
+              <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-white/40">Playlist</h4>
+                  <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded font-bold">{playlist.length}</span>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {playlist.length > 0 ? playlist.map((url, idx) => (
+                    <div key={idx} className="p-3 bg-black/40 border border-white/5 rounded-xl flex items-center gap-3 group">
+                      <span className="text-[10px] font-black text-white/20 group-hover:text-primary transition-colors">{idx + 1}</span>
+                      <p className="text-xs truncate text-white/50 flex-1">{url}</p>
                     </div>
-                  </div>
-                )}
-                {Object.entries(remoteStreams).map(([socketId, stream]) => (
-                  <div key={socketId} className="aspect-video bg-black rounded-xl overflow-hidden border border-white/10 relative shadow-xl">
-                    <video 
-                      ref={(el) => { if (el) el.srcObject = stream; }} 
-                      autoPlay 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded text-[10px] font-medium border border-white/10 uppercase tracking-wider">
-                      User {socketId.substring(0, 4)}
-                    </div>
-                  </div>
-                ))}
+                  )) : (
+                    <p className="text-center py-4 text-white/10 text-xs italic">No videos queued</p>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
-        {/* Right Side: Chat Panel */}
-        <aside className="w-96 border-l border-white/10 bg-surface/30 backdrop-blur-sm flex flex-col">
-          <div className="p-4 border-b border-white/10 italic text-white/40 text-sm">
-            Chat with friends in real-time
+        {/* Chat Drawer */}
+        <aside className="w-80 border-l border-white/5 bg-black flex flex-col hidden xl:flex">
+          <div className="p-6 border-b border-white/5">
+            <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+              <Users size={14} />
+              Lobby ({members.length + 1})
+            </h3>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
             {messages.map((msg, idx) => (
-              <div key={idx} className={`flex flex-col ${msg.sender === 'You' ? 'items-end' : 'items-start'}`}>
-                <span className="text-xs text-white/30 mb-1">{msg.sender}</span>
-                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${msg.sender === 'You' ? 'bg-primary text-white rounded-tr-none' : 'bg-white/10 text-white rounded-tl-none'}`}>
+              <div key={idx} className={`flex flex-col ${msg.sender === userId ? 'items-end' : 'items-start'}`}>
+                <div className={`max-w-[100%] p-4 rounded-2xl text-sm font-medium ${msg.sender === userId ? 'bg-primary text-black rounded-tr-none' : 'bg-zinc-900 text-white rounded-tl-none border border-white/5'}`}>
                   {msg.message}
                 </div>
+                <span className="text-[10px] font-medium text-white/20 mt-2 px-1">
+                  {msg.sender === userId ? 'ME' : msg.sender}
+                </span>
               </div>
             ))}
           </div>
 
-          <form onSubmit={sendMessage} className="p-4 bg-surface/50 border-t border-white/10 flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Type a message..." 
-              className="input-field flex-1 py-2 text-sm"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <button className="bg-primary p-2 rounded-xl hover:bg-primary/80 transition-all">
-              <Send size={18} />
-            </button>
+          <form onSubmit={sendMessage} className="p-6 bg-black border-t border-white/5">
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Say something..." 
+                className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-5 pr-12 focus:outline-none focus:border-primary/50 transition-all text-sm"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <button className="absolute right-2 top-2 bottom-2 px-3 text-primary hover:scale-110 transition-transform">
+                <Send size={18} />
+              </button>
+            </div>
           </form>
         </aside>
       </div>
