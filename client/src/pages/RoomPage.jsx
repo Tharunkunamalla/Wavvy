@@ -67,12 +67,13 @@ const RoomPage = () => {
       isSyncing.current = true;
       if (hasInteracted) setIsPlaying(state === 'playing');
       
-      if (playerRef.current) {
-        const internalPlayer = playerRef.current.getInternalPlayer();
-        if (internalPlayer) {
-          const currentTime = playerRef.current.getCurrentTime();
-          if (Math.abs(currentTime - time) > 2) {
-            playerRef.current.seekTo(time, 'seconds');
+      const player = playerRef.current;
+      if (player && typeof player.getInternalPlayer === 'function') {
+        const internalPlayer = player.getInternalPlayer();
+        if (internalPlayer && typeof player.getCurrentTime === 'function') {
+          const currentTime = player.getCurrentTime();
+          if (Math.abs(currentTime - (time || 0)) > 2) {
+            player.seekTo(time, 'seconds');
           }
         }
       }
@@ -131,7 +132,7 @@ const RoomPage = () => {
   };
 
   const onPlay = () => {
-    if (isSyncing.current || !playerRef.current) return;
+    if (isSyncing.current || !playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
     socketRef.current.emit('video-state-change', { 
       roomId, 
       state: 'playing', 
@@ -141,7 +142,7 @@ const RoomPage = () => {
   };
 
   const onPause = () => {
-    if (isSyncing.current || !playerRef.current) return;
+    if (isSyncing.current || !playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
     socketRef.current.emit('video-state-change', { 
       roomId, 
       state: 'paused', 
