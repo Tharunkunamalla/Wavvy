@@ -31,8 +31,9 @@ const Room = require('./models/Room');
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
-  socket.on('join-room', async (roomId) => {
+  socket.on('join-room', async ({ roomId, user }) => {
     socket.join(roomId);
+    socket.data.user = user; // Store user info on socket
     
     // Find or create room in DB
     let room = await Room.findOne({ roomId });
@@ -40,19 +41,28 @@ io.on('connection', (socket) => {
       room = await Room.create({
         roomId,
         hostId: socket.id,
-        members: [socket.id]
+        members: [{ id: socket.id, name: user.name, email: user.email }]
       });
     } else {
-      room.members.push(socket.id);
-      await room.save();
+      if (!room.members.find(m => m.id === socket.id)) {
+        room.members.push({ id: socket.id, name: user.name, email: user.email });
+        await room.save();
+      }
     }
 
     // Send current state to new user
     socket.emit('sync-video-load', { url: room.videoUrl });
     socket.emit('sync-video', { state: room.isPlaying ? 'playing' : 'paused', time: room.currentTime });
     
-    console.log(`User ${socket.id} joined room ${roomId}`);
-    socket.to(roomId).emit('user-joined', { userId: socket.id });
+    // Broadcast updated member list
+    const roomUsers = Array.from(io.sockets.adapter.rooms.get(roomId) || [])
+      .map(sid => {
+        const s = io.sockets.sockets.get(sid);
+        return { id: sid, name: s?.data?.user?.name || 'Guest' };
+      });
+
+    io.to(roomId).emit('update-members', roomUsers);
+    console.log(`User ${user.name} (${socket.id}) joined room ${roomId}`);
   });
 
   socket.on('video-state-change', async ({ roomId, state, time }) => {
@@ -100,7 +110,16 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnecting', () => {
+    const rooms = Array.from(socket.rooms);
+    rooms.forEach(roomId => {
+      const roomUsers = Array.from(io.sockets.adapter.rooms.get(roomId) || [])
+        .map(sid => {
+          const s = io.sockets.sockets.get(sid);
+          return { id: sid, name: s?.data?.user?.name || 'Guest' };
+        });
+      io.to(roomId).emit('update-members', roomUsers);
+    });
     console.log('User disconnected:', socket.id);
   });
 });

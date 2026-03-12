@@ -4,150 +4,217 @@ import { Play, Plus, Search, Video, Github, Clock, Monitor } from 'lucide-react'
 
 const LandingPage = () => {
   const [roomId, setRoomId] = useState('');
+  const [roomName, setRoomName] = useState('');
   const [myRooms, setMyRooms] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
     const savedRooms = JSON.parse(localStorage.getItem('myRooms') || '[]');
     setMyRooms(savedRooms);
   }, []);
 
-  const handleCreateRoom = () => {
+  const handleCreateRoom = (e) => {
+    e.preventDefault();
+    if (!user) return navigate('/login');
+    if (!roomName.trim()) return;
+
     const newRoomId = Math.random().toString(36).substring(2, 9);
-    const newRoom = { id: newRoomId, createdAt: new Date().toISOString(), name: 'Watch Party' };
+    const newRoom = { id: newRoomId, name: roomName.trim(), createdAt: new Date().toISOString() };
     const updatedRooms = [newRoom, ...myRooms];
     localStorage.setItem('myRooms', JSON.stringify(updatedRooms));
-    navigate(`/room/${newRoomId}`);
+    navigate(`/room/${newRoomId}`, { state: { roomName: roomName.trim() } });
   };
 
   const handleJoinRoom = (e) => {
     e.preventDefault();
+    if (!user) return navigate('/login');
     if (roomId.trim()) {
       navigate(`/room/${roomId.trim()}`);
     }
   };
 
+  const handleGetStarted = () => {
+    if (!user) navigate('/login');
+    else setShowCreateModal(true);
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       {/* Top Navigation */}
-      <nav className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+      <nav className="h-20 flex items-center justify-between px-12 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-            <Play className="text-black fill-current" size={16} />
-          </div>
-          <span className="text-xl font-black tracking-tighter italic">Wavvy</span>
+          <Play className="text-white fill-current" size={24} />
+          <span className="text-2xl font-black tracking-tighter italic">SyncWatch</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="https://github.com/Tharunkunamalla/Wavvy" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white transition-colors">
-            <Github size={20} />
-          </a>
-          <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold">
-            U
-          </div>
+          {!user ? (
+            <button onClick={() => navigate('/login')} className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-full text-sm font-bold border border-white/10 transition-all">
+              Sign In
+            </button>
+          ) : (
+            <div className="flex items-center gap-4">
+               <span className="text-white/40 text-sm font-bold">Hello, {user.name}</span>
+               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black">
+                 {user.name.charAt(0).toUpperCase()}
+               </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto p-8 md:p-12">
-        {/* Welcome Header */}
-        <section className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">Welcome back!</h1>
-          <p className="text-white/40 text-lg">Create a room or join one to start watching together</p>
-        </section>
+      <main className="flex-1 max-w-7xl w-full mx-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        {/* Left: Hero Content */}
+        <div className="space-y-10">
+          <div className="space-y-4">
+            <h1 className="text-7xl font-black leading-[1.1] tracking-tighter">
+              Watch Together, <br />
+              <span className="text-white/40">Stay Synced</span>
+            </h1>
+            <p className="text-xl text-white/40 leading-relaxed max-w-lg font-medium">
+              Experience movies and shows with friends in perfect harmony. 
+              Real-time sync, video calls, and instant chat—all in one place.
+            </p>
+          </div>
 
-        {/* Action Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          {/* Create Room Card */}
-          <button 
-            onClick={handleCreateRoom}
-            className="group relative flex flex-col items-center justify-center p-12 bg-white/5 border border-white/10 rounded-3xl hover:bg-primary/5 hover:border-primary/30 transition-all duration-500 overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 blur-3xl transition-opacity duration-500"></div>
-            <div className="w-16 h-16 bg-white/10 group-hover:bg-primary group-hover:scale-110 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300">
-              <Plus className="text-white group-hover:text-black" size={32} />
+          <div className="flex flex-col sm:flex-row gap-6">
+            <button 
+              onClick={handleGetStarted}
+              className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all text-lg shadow-2xl shadow-white/10"
+            >
+              <Play fill="black" size={20} />
+              Get Started Free
+            </button>
+            <div className="flex flex-col justify-center">
+               <div className="flex items-center gap-2 text-xs font-bold text-white/20 tracking-widest uppercase">
+                  <Monitor size={14} />
+                  <span>Free Forever</span>
+                  <span className="w-1 h-1 bg-white/20 rounded-full mx-1"></span>
+                  <Github size={14} />
+                  <span>No Credit Card</span>
+               </div>
             </div>
-            <h3 className="text-2xl font-bold mb-2 z-10">Create New Room</h3>
-            <p className="text-white/30 text-sm z-10">Start a private party instantly</p>
-          </button>
-
-          {/* Join Room Card */}
-          <div className="flex flex-col p-10 bg-white/5 border border-white/10 rounded-3xl justify-center">
-            <h3 className="text-xl font-bold mb-2">Join with Room ID</h3>
-            <p className="text-white/30 text-sm mb-6">Enter a code shared by your friend</p>
-            <form onSubmit={handleJoinRoom} className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Enter room ID..." 
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary/50 transition-all text-sm"
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                />
-              </div>
-              <button type="submit" className="bg-white/10 hover:bg-white/20 text-white font-bold px-8 rounded-2xl transition-all border border-white/10">
-                Join Room
-              </button>
-            </form>
           </div>
-        </section>
+        </div>
 
-        {/* My Rooms List */}
-        <section>
-          <div className="flex items-center gap-3 mb-8">
-            <Monitor className="text-primary" size={24} />
-            <h2 className="text-2xl font-bold">My Rooms</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {myRooms.length > 0 ? myRooms.map((room) => (
-              <div 
-                key={room.id}
-                onClick={() => navigate(`/room/${room.id}`)}
-                className="glass-card p-6 bg-white/5 border-white/10 hover:border-primary/40 cursor-pointer group transition-all"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{room.id}</h4>
-                  <div className="px-2 py-1 bg-primary/10 text-primary rounded text-[10px] font-bold uppercase tracking-wider">
-                    Active
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-white/30 text-sm mb-1">
-                  <Clock size={14} />
-                  <span>Created {new Date(room.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center gap-2 text-white/30 text-sm">
-                  <Video size={14} />
-                  <span>Room ID: {room.id}</span>
-                </div>
-              </div>
-            )) : (
-              <div className="col-span-full py-12 text-center bg-white/5 border border-dashed border-white/10 rounded-3xl">
-                <p className="text-white/20">No recently created rooms found.</p>
-              </div>
-            )}
-          </div>
-        </section>
+        {/* Right: Feature Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <FeatureCard 
+            icon={<Clock className="text-white" size={24} />}
+            title="Perfect Sync"
+            desc="Real-time synchronization keeps everyone watching at the exact same moment"
+          />
+          <FeatureCard 
+            icon={<Users className="text-white" size={24} />}
+            title="Video Calls"
+            desc="See your friends' reactions in real-time with built-in video chat"
+          />
+          <FeatureCard 
+            icon={<Monitor className="text-white" size={24} />}
+            title="Any Platform"
+            desc="YouTube, direct links, and more—watch from anywhere"
+          />
+          <FeatureCard 
+            icon={<Play className="text-white" size={24} />}
+            title="Live Chat"
+            desc="Share reactions and jokes with instant messaging"
+          />
+        </div>
       </main>
 
-      {/* Footer Decoration */}
-      <footer className="p-8 text-center border-t border-white/5">
-        <div className="flex justify-center gap-8 text-white/20 text-xs font-medium uppercase tracking-widest mb-4">
-          <span>About Us</span>
-          <span>Contact Us</span>
-          <span>Terms</span>
-          <span>Privacy</span>
-        </div>
-        <p className="text-white/10 text-[10px] transform">© {new Date().getFullYear()} WAVVY. ALL RIGHTS RESERVED.</p>
+      {/* Recently Created Rooms Section */}
+      {user && myRooms.length > 0 && (
+        <section className="max-w-7xl w-full mx-auto px-8 pb-20">
+           <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-1 w-px bg-primary"></div>
+              <h2 className="text-2xl font-bold italic tracking-tighter">My Rooms</h2>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {myRooms.map((room) => (
+                <div 
+                  key={room.id}
+                  onClick={() => navigate(`/room/${room.id}`)}
+                  className="bg-zinc-900 shadow-2xl p-8 rounded-[2rem] border border-white/5 hover:border-primary/50 transition-all cursor-pointer group"
+                >
+                  <h4 className="font-black text-xl mb-2 group-hover:text-primary transition-colors">{room.name || 'Untitled Room'}</h4>
+                  <div className="flex items-center justify-between text-xs font-medium text-white/20 uppercase tracking-widest">
+                     <div className="flex items-center gap-2">
+                        <Clock size={12} />
+                        <span>{new Date(room.createdAt).toLocaleDateString()}</span>
+                     </div>
+                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              ))}
+           </div>
+        </section>
+      )}
+
+      {/* Footer */}
+      <footer className="py-12 px-8 flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto border-t border-white/5">
+         <div className="flex gap-8 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
+            <span className="hover:text-white transition-colors cursor-pointer">About Us</span>
+            <span className="hover:text-white transition-colors cursor-pointer">Contact Us</span>
+         </div>
+         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 mt-6 sm:mt-0">
+           © 2026 SyncWatch. Watch together, wherever you are.
+         </p>
       </footer>
+
+      {/* Create Room Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+           <div className="bg-zinc-900 w-full max-w-lg rounded-[2.5rem] border border-white/10 p-12 shadow-2xl relative">
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors"
+              >
+                <Plus className="rotate-45" size={32} />
+              </button>
+              <h2 className="text-4xl font-black tracking-tight italic mb-2">Create New Room</h2>
+              <p className="text-white/40 font-medium mb-10">Choose a name for your watch party</p>
+              <form onSubmit={handleCreateRoom} className="space-y-6">
+                <input 
+                  autoFocus
+                  type="text" 
+                  placeholder="Enter room name (e.g. Movie Night)" 
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 focus:outline-none focus:border-primary/50 transition-all text-lg font-bold"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                />
+                <div className="flex gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-5 rounded-2xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-[2] bg-primary text-black font-black py-5 rounded-2xl transition-all shadow-xl shadow-primary/20"
+                  >
+                    Create Room
+                  </button>
+                </div>
+              </form>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const FeatureCard = ({ icon, title, desc }) => (
-  <div className="glass-card p-6 hover:bg-white/10 transition-colors border-white/5">
-    <div className="mb-4">{icon}</div>
-    <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-white/50 leading-relaxed text-sm">{desc}</p>
+  <div className="bg-zinc-900 border border-white/5 p-10 rounded-[2.5rem] space-y-6 hover:bg-zinc-800/50 transition-all group">
+    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-primary transition-colors">
+      {React.cloneElement(icon, { className: "text-white group-hover:text-black transition-colors" })}
+    </div>
+    <div className="space-y-2">
+      <h3 className="text-xl font-bold italic tracking-tighter">{title}</h3>
+      <p className="text-sm text-white/40 font-medium leading-relaxed">{desc}</p>
+    </div>
   </div>
 );
 

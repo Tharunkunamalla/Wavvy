@@ -23,7 +23,10 @@ const roomSchema = new mongoose.Schema({
     default: false
   },
   members: [{
-    type: String // Socket IDs or User IDs
+    id: String,
+    name: String,
+    email: String,
+    joinedAt: { type: Date, default: Date.now }
   }],
   createdAt: {
     type: Date,
