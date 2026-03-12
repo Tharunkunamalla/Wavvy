@@ -172,6 +172,41 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('skip-to-next', async ({ roomId }) => {
+    try {
+      if (socket.data.canControl) {
+        const room = await Room.findOne({ roomId });
+        if (room && room.playlist.length > 0) {
+          const nextUrl = room.playlist.shift(); // Remove first item
+          room.videoUrl = nextUrl;
+          room.currentTime = 0;
+          room.isPlaying = true;
+          await room.save();
+          
+          io.to(roomId).emit('sync-video-load', { url: nextUrl });
+          io.to(roomId).emit('sync-playlist', room.playlist);
+        }
+      }
+    } catch (err) {
+      console.error('Skip to next error:', err);
+    }
+  });
+
+  socket.on('set-playlist', async ({ roomId, playlist }) => {
+    try {
+      if (socket.data.canControl) {
+        const room = await Room.findOne({ roomId });
+        if (room) {
+          room.playlist = playlist;
+          await room.save();
+          io.to(roomId).emit('sync-playlist', room.playlist);
+        }
+      }
+    } catch (err) {
+      console.error('Set playlist error:', err);
+    }
+  });
+
   socket.on('kick-user', async ({ roomId, targetId }) => {
     try {
       if (socket.data.isHost) {
