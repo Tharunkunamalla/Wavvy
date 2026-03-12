@@ -54,11 +54,20 @@ const LandingPage = () => {
               Sign In
             </button>
           ) : (
-            <div className="flex items-center gap-4">
-               <span className="text-white/40 text-sm font-bold">Hello, {user.name}</span>
-               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black">
+            <div className="flex items-center gap-4 bg-white/5 p-2 pr-4 rounded-full border border-white/5">
+               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black shadow-lg shadow-primary/20">
                  {user.name.charAt(0).toUpperCase()}
                </div>
+               <div className="flex flex-col">
+                  <span className="text-white/80 text-xs font-black uppercase tracking-widest leading-none">Hello,</span>
+                  <span className="text-white text-sm font-black italic">{user.name}</span>
+               </div>
+               <button 
+                onClick={() => { localStorage.removeItem('user'); window.location.reload(); }}
+                className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-red-500 transition-colors"
+               >
+                 Logout
+               </button>
             </div>
           )}
         </div>

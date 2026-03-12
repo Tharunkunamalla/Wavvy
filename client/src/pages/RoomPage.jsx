@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactPlayer from 'react-player';
-import { Send, Users, Video, Link, LogOut, Play, Plus, Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical } from 'lucide-react';
+import { Send, Users, Video, Link, LogOut, Play, Plus, Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, XCircle, Mic, MicOff } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
 
@@ -25,11 +25,12 @@ const RoomPage = () => {
   const [playlist, setPlaylist] = useState([]);
   const [localStream, setLocalStream] = useState(null);
   const localStreamRef = useRef(null);
-  const [remoteStreams, setRemoteStreams] = useState({});
+  const [remoteStreams, setRemoteStreams] = useState({}); // { sid: { stream, name } }
   const peerConnections = useRef({});
   
   const user = JSON.parse(localStorage.getItem('user'));
   const [activeTab, setActiveTab] = useState('chat');
+  const [showMemberMenu, setShowMemberMenu] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -47,6 +48,20 @@ const RoomPage = () => {
 
     socketRef.current.on('update-members', (userList) => {
       setMembers(userList);
+      // Cleanup remote streams for users who left
+      setRemoteStreams(prev => {
+        const next = { ...prev };
+        const memberIds = userList.map(m => m.id);
+        Object.keys(next).forEach(sid => {
+          if (!memberIds.includes(sid)) delete next[sid];
+        });
+        return next;
+      });
+    });
+
+    socketRef.current.on('kicked', () => {
+       alert("You have been removed from the room by the host.");
+       navigate('/');
     });
 
     socketRef.current.on('sync-video', ({ state, time }) => {
@@ -63,21 +78,17 @@ const RoomPage = () => {
       setIsPlaying(true);
     });
 
-    socketRef.current.on('sync-playlist', (newPlaylist) => {
-      setPlaylist(newPlaylist);
-    });
-
-    socketRef.current.on('user-started-call', async ({ sender }) => {
+    socketRef.current.on('user-started-call', async ({ sender, name }) => {
       if (localStreamRef.current) {
-        const pc = createPeerConnection(sender);
+        const pc = createPeerConnection(sender, name);
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socketRef.current.emit('video-offer', { roomId, offer });
       }
     });
 
-    socketRef.current.on('video-offer', async ({ offer, sender }) => {
-      const pc = createPeerConnection(sender);
+    socketRef.current.on('video-offer', async ({ offer, sender, name }) => {
+      const pc = createPeerConnection(sender, name);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -102,7 +113,7 @@ const RoomPage = () => {
     };
   }, [roomId]);
 
-  const createPeerConnection = (targetId) => {
+  const createPeerConnection = (targetId, name) => {
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
@@ -114,7 +125,10 @@ const RoomPage = () => {
     };
 
     pc.ontrack = (event) => {
-      setRemoteStreams(prev => ({ ...prev, [targetId]: event.streams[0] }));
+      setRemoteStreams(prev => ({ 
+        ...prev, 
+        [targetId]: { stream: event.streams[0], name } 
+      }));
     };
 
     if (localStreamRef.current) {
@@ -123,6 +137,28 @@ const RoomPage = () => {
 
     peerConnections.current[targetId] = pc;
     return pc;
+  };
+
+  const handleKick = (targetId) => {
+    socketRef.current.emit('kick-user', { roomId, targetId });
+    setShowMemberMenu(null);
+  };
+
+  const togglePermission = (targetId, canControl) => {
+    socketRef.current.emit('toggle-permission', { roomId, targetId, canControl });
+    setShowMemberMenu(null);
+  };
+
+  const handleGrantAll = () => {
+    members.forEach(m => {
+       if(!m.isHost) togglePermission(m.id, true);
+    });
+  };
+
+  const handleRevokeAll = () => {
+    members.forEach(m => {
+       if(!m.isHost) togglePermission(m.id, false);
+    });
   };
 
   const sendMessage = (e) => {
@@ -181,6 +217,8 @@ const RoomPage = () => {
         localStream.getTracks().forEach(t => t.stop());
         setLocalStream(null);
         localStreamRef.current = null;
+        setRemoteStreams({});
+        peerConnections.current = {};
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -192,9 +230,11 @@ const RoomPage = () => {
     }
   };
 
+  const isHost = members.find(m => m.id === socketRef.current?.id)?.isHost;
+  const canControl = members.find(m => m.id === socketRef.current?.id)?.canControl;
+
   return (
     <div className="flex flex-col h-screen bg-black text-white font-sans overflow-hidden">
-      {/* Header */}
       <nav className="h-16 flex items-center justify-between px-8 border-b border-white/5 bg-black/50 backdrop-blur-xl z-50">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
@@ -227,9 +267,7 @@ const RoomPage = () => {
       </nav>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Main Section */}
         <main className="flex-1 flex flex-col p-8 overflow-y-auto custom-scrollbar lg:pr-4">
-          {/* Video Player */}
           <div className="relative aspect-video bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 ring-1 ring-white/10 group">
              {videoUrl ? (
                <ReactPlayer
@@ -246,7 +284,7 @@ const RoomPage = () => {
                  onSeek={handleSeek}
                  config={{
                    youtube: {
-                     playerVars: { autoplay: 1, modestbranding: 1, rel: 0 }
+                     playerVars: { autoplay: 1, modestbranding: 1, rel: 0, origin: window.location.origin }
                    }
                  }}
                />
@@ -259,7 +297,6 @@ const RoomPage = () => {
              )}
           </div>
 
-          {/* Load Stream Input */}
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
              <div className="lg:col-span-3 space-y-8">
                 <div className="bg-zinc-900/50 p-8 rounded-[2rem] border border-white/5">
@@ -268,14 +305,19 @@ const RoomPage = () => {
                       <input 
                         type="text" 
                         placeholder="Paste YouTube, Dropbox, or direct .mp4 URL..." 
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 font-bold text-white/80 focus:outline-none focus:border-primary/50 transition-all"
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 font-bold text-white/80 focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50"
                         value={inputUrl}
                         onChange={(e) => setInputUrl(e.target.value)}
+                        disabled={!canControl}
                       />
-                      <button className="absolute right-2 top-2 bottom-2 bg-primary hover:bg-primary/80 text-black font-black px-8 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest">
+                      <button 
+                        disabled={!canControl}
+                        className="absolute right-2 top-2 bottom-2 bg-primary hover:bg-primary/80 text-black font-black px-8 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest disabled:opacity-50"
+                      >
                         Load Video
                       </button>
                    </form>
+                   {!canControl && <p className="mt-2 text-[10px] text-red-500 font-bold uppercase">You don't have permission to load videos</p>}
                    <div className="mt-4 flex flex-wrap gap-4 text-[10px] font-bold text-white/30 uppercase tracking-widest">
                       <span className="flex items-center gap-1 text-primary"><Shield size={10} /> YouTube Safe</span>
                       <span className="flex items-center gap-1 text-primary"><Shield size={10} /> MP4 Direct</span>
@@ -283,23 +325,22 @@ const RoomPage = () => {
                    </div>
                 </div>
 
-                {/* Video Streams */}
                 {(localStream || Object.keys(remoteStreams).length > 0) && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                      {localStream && (
                        <div className="aspect-video bg-zinc-900 rounded-2xl overflow-hidden border border-primary/20 relative shadow-2xl">
                           <video ref={el => { if(el) el.srcObject = localStream; }} autoPlay muted className="w-full h-full object-cover mirror" />
                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-3 flex items-center justify-between">
-                             <span className="text-[10px] font-black text-primary uppercase tracking-widest">You</span>
+                             <span className="text-[10px] font-black text-primary uppercase tracking-widest truncate">{user.name} (You)</span>
                              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
                           </div>
                        </div>
                      )}
-                     {Object.entries(remoteStreams).map(([sid, stream]) => (
+                     {Object.entries(remoteStreams).map(([sid, data]) => (
                         <div key={sid} className="aspect-video bg-zinc-900 rounded-2xl overflow-hidden border border-white/5 relative shadow-2xl">
-                           <video ref={el => { if(el) el.srcObject = stream; }} autoPlay className="w-full h-full object-cover" />
+                           <video ref={el => { if(el) el.srcObject = data.stream; }} autoPlay className="w-full h-full object-cover" />
                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-3 flex items-center justify-between">
-                              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Participant</span>
+                              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest truncate">{data.name}</span>
                            </div>
                         </div>
                      ))}
@@ -339,9 +380,7 @@ const RoomPage = () => {
           </div>
         </main>
 
-        {/* Right Sidebar */}
-        <aside className="w-[400px] border-l border-white/5 bg-black flex flex-col">
-           {/* Tabs */}
+        <aside className="w-[400px] border-l border-white/5 bg-black flex flex-col relative">
            <div className="flex border-b border-white/5 px-6 pt-4 gap-6">
               <button 
                 onClick={() => setActiveTab('chat')}
@@ -366,7 +405,6 @@ const RoomPage = () => {
                     <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
                        <Send size={40} strokeWidth={1} className="mb-4" />
                        <p className="text-xs font-black uppercase tracking-widest">No messages yet</p>
-                       <p className="text-[10px] font-medium mt-1">Start the conversation!</p>
                     </div>
                   )}
                   {messages.map((msg, i) => (
@@ -393,24 +431,22 @@ const RoomPage = () => {
                        <Send size={16} />
                      </button>
                   </div>
-                  <p className="text-[10px] font-bold text-white/10 mt-3 flex items-center gap-2">
-                     <Clock size={10} />
-                     Press Enter to send • Shift+Enter for new line
-                  </p>
                </form>
              </>
            ) : (
              <div className="flex-1 flex flex-col p-6">
-                <div className="bg-zinc-900 border border-white/5 rounded-3xl p-6 mb-6">
-                   <div className="flex gap-2">
-                      <button className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-primary/20 transition-all flex items-center justify-center gap-2">
-                         <Shield size={12} /> Grant All
-                      </button>
-                      <button className="flex-1 bg-white/5 hover:bg-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2">
-                         <ShieldOff size={12} /> Revoke All
-                      </button>
-                   </div>
-                </div>
+                {isHost && (
+                  <div className="bg-zinc-900 border border-white/5 rounded-3xl p-6 mb-6">
+                    <div className="flex gap-2">
+                        <button onClick={handleGrantAll} className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-primary/20 transition-all flex items-center justify-center gap-2">
+                            <Shield size={12} /> Grant All
+                        </button>
+                        <button onClick={handleRevokeAll} className="flex-1 bg-white/5 hover:bg-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2">
+                            <ShieldOff size={12} /> Revoke All
+                        </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-3 overflow-y-auto flex-1 custom-scrollbar">
                    {members.map(m => (
@@ -422,18 +458,48 @@ const RoomPage = () => {
                         <div className="flex-1 min-w-0">
                            <div className="flex items-center gap-2">
                               <h4 className="text-sm font-black truncate">{m.name}</h4>
-                              {m.id === socketRef.current?.id && <Crown size={12} className="text-yellow-500" />}
+                              {m.isHost && <Crown size={12} className="text-yellow-500" />}
                            </div>
-                           <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest flex items-center gap-1">
-                              <Video size={10} /> Can control
+                           <p className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${m.canControl ? 'text-primary' : 'text-white/20'}`}>
+                              {m.canControl ? <Shield size={10} /> : <ShieldOff size={10} />}
+                              {m.canControl ? "Can control" : "View only"}
                            </p>
                         </div>
-                        <MoreVertical className="text-white/10 cursor-pointer hover:text-white" size={16} />
+                        {isHost && m.id !== socketRef.current?.id && (
+                          <div className="relative">
+                            <MoreVertical 
+                              className="text-white/10 cursor-pointer hover:text-white" 
+                              size={16} 
+                              onClick={() => setShowMemberMenu(showMemberMenu === m.id ? null : m.id)}
+                            />
+                            {showMemberMenu === m.id && (
+                              <div className="absolute right-0 top-6 w-48 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-[100] p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                 <button 
+                                  onClick={() => togglePermission(m.id, !m.canControl)}
+                                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-white/60 hover:text-primary"
+                                 >
+                                    {m.canControl ? <ShieldOff size={14} /> : <Shield size={14} />}
+                                    {m.canControl ? "Revoke Control" : "Grant Control"}
+                                 </button>
+                                 <button 
+                                  onClick={() => handleKick(m.id)}
+                                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-red-500/60 hover:text-red-500"
+                                 >
+                                    <XCircle size={14} />
+                                    Kick Participant
+                                 </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                      </div>
                    ))}
                 </div>
 
-                <button className="mt-8 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest py-4 rounded-2xl border border-red-500/10 transition-all flex items-center justify-center gap-2">
+                <button 
+                  onClick={() => navigate('/')}
+                  className="mt-8 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest py-4 rounded-2xl border border-red-500/10 transition-all flex items-center justify-center gap-2"
+                >
                    <LogOut size={16} /> Leave Room
                 </button>
              </div>
