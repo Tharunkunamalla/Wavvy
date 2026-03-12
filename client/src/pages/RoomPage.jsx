@@ -64,9 +64,7 @@ const RoomPage = () => {
     });
 
     socketRef.current.on('sync-video-load', ({ url }) => {
-      if (url !== videoUrl) {
-        setVideoUrl(url);
-      }
+      setVideoUrl(url);
     });
 
     socketRef.current.on('sync-video', ({ state, time }) => {
@@ -188,7 +186,7 @@ const RoomPage = () => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
              <Play className="text-primary fill-current" size={20} />
-             <span className="text-xl font-black tracking-tighter italic">youtube</span>
+             <span className="text-xl font-black tracking-tighter italic">Wavvy</span>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium text-white/40">
              <div className="flex items-center gap-2">
@@ -391,7 +389,7 @@ const RoomPage = () => {
            </div>
 
            {/* Members Card */}
-           <div className="h-[400px] flex flex-col m-4 mt-0 bg-[#141414] rounded-xl border border-white/5 shadow-lg overflow-hidden">
+           <div className="h-[300px] flex flex-col m-4 mt-0 bg-[#141414] rounded-xl border border-white/5 shadow-lg overflow-hidden shrink-0">
               <div className="h-12 flex items-center px-5 border-b border-white/5 gap-2">
                  <Users size={14} className="text-white/40" />
                  <h4 className="text-sm font-bold">Members</h4>
