@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Plus, Search, Video, Github, Clock, Monitor } from 'lucide-react';
+import { Play, Plus, Search, Video, Github, Clock, Monitor, Users, ArrowRight } from 'lucide-react';
 
 const LandingPage = () => {
   const [roomId, setRoomId] = useState('');
