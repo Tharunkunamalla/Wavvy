@@ -38,6 +38,10 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('sync-video', { state, time });
   });
 
+  socket.on('video-load', ({ roomId, url }) => {
+    io.to(roomId).emit('sync-video-load', { url });
+  });
+
   socket.on('send-message', ({ roomId, message, sender }) => {
     io.to(roomId).emit('receive-message', { message, sender, timestamp: new Date() });
   });
