@@ -29,6 +29,7 @@ const RoomPage = () => {
   const user = JSON.parse(localStorage.getItem('user'));
   const [showMemberMenu, setShowMemberMenu] = useState(null);
 
+  // Socket Connection useEffect - Minimal dependencies to prevent reconnection
   useEffect(() => {
     if (!user) {
       navigate('/login', { state: { from: `/room/${roomId}` } });
@@ -60,11 +61,12 @@ const RoomPage = () => {
 
     socketRef.current.on('sync-video-load', ({ url }) => {
       setVideoUrl(url);
-      if (hasInteracted) setIsPlaying(true);
+      // We'll handle isPlaying in a separate effect or based on hasInteracted
     });
 
     socketRef.current.on('sync-video', ({ state, time }) => {
       isSyncing.current = true;
+      // Status update: only if we've interacted
       if (hasInteracted) setIsPlaying(state === 'playing');
       
       const player = playerRef.current;
@@ -72,7 +74,7 @@ const RoomPage = () => {
         const internalPlayer = player.getInternalPlayer();
         if (internalPlayer && typeof player.getCurrentTime === 'function') {
           const currentTime = player.getCurrentTime();
-          if (Math.abs(currentTime - (time || 0)) > 2) {
+          if (Math.abs(currentTime - (time || 0)) > 1) { // Tightened threshold to 1s
             player.seekTo(time, 'seconds');
           }
         }
@@ -83,12 +85,14 @@ const RoomPage = () => {
     return () => {
       socketRef.current?.disconnect();
     };
-  }, [roomId, hasInteracted]);
+  }, [roomId]); // Removed hasInteracted to prevent reconnection
 
-  const handleInteraction = () => {
-    setHasInteracted(true);
-    if (videoUrl) setIsPlaying(true);
-  };
+  // Separate effect to trigger play once interaction happens
+  useEffect(() => {
+    if (hasInteracted && videoUrl) {
+      setIsPlaying(true);
+    }
+  }, [hasInteracted, videoUrl]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -96,18 +100,37 @@ const RoomPage = () => {
     }
   }, [messages]);
 
+  const handleInteraction = () => {
+    if (!hasInteracted) setHasInteracted(true);
+  };
+
+  const cleanYouTubeUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
+        // Simple cleaning: just keep the primary 'v' param if it's there, or the whole thing sans extra garbage
+        // For simplicity as suggested: url.split("&")[0]
+        return url.split("&")[0];
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
   const handleUrlChange = (e) => {
     if (e) e.preventDefault();
-    handleInteraction(); // Record interaction
+    handleInteraction();
     if (inputUrl.trim()) {
-      socketRef.current.emit('video-load', { roomId, url: inputUrl.trim() });
+      const cleanUrl = cleanYouTubeUrl(inputUrl.trim());
+      socketRef.current.emit('video-load', { roomId, url: cleanUrl });
       setInputUrl('');
     }
   };
 
   const sendMessage = (e) => {
     e.preventDefault();
-    handleInteraction(); // Record interaction
+    handleInteraction();
     if (message.trim()) {
       socketRef.current.emit('send-message', { roomId, message: message.trim(), sender: user.name });
       setMessage('');
@@ -126,7 +149,8 @@ const RoomPage = () => {
 
   const addToPlaylist = () => {
     if (inputUrl.trim()) {
-      socketRef.current.emit('add-to-playlist', { roomId, url: inputUrl.trim() });
+      const cleanUrl = cleanYouTubeUrl(inputUrl.trim());
+      socketRef.current.emit('add-to-playlist', { roomId, url: cleanUrl });
       setInputUrl('');
     }
   };
@@ -172,7 +196,7 @@ const RoomPage = () => {
            <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link Copied!'); }} className="text-xs font-bold uppercase tracking-widest text-white/40 hover:text-white transition-colors flex items-center gap-2">
              <Link size={14} /> Share link
            </button>
-           <button onClick={() => navigate('/')} className="text-xs font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2 text-xs">
+           <button onClick={() => navigate('/')} className="text-xs font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2">
              <LogOut size={14} /> Exit
            </button>
         </div>
@@ -184,7 +208,6 @@ const RoomPage = () => {
               {videoUrl ? (
                 <>
                   <ReactPlayer 
-                    key={videoUrl} 
                     ref={playerRef} 
                     url={videoUrl} 
                     width="100%" 
@@ -193,6 +216,8 @@ const RoomPage = () => {
                     controls={true} 
                     onPlay={onPlay} 
                     onPause={onPause}
+                    playsinline={true}
+                    muted={false}
                     config={{ 
                       youtube: { 
                         playerVars: { 
@@ -206,15 +231,15 @@ const RoomPage = () => {
                     }} 
                   />
                   {!hasInteracted && (
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-20 animate-in fade-in duration-500">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-50">
                        <button 
                         onClick={handleInteraction}
-                        className="bg-primary text-black font-black px-10 py-5 rounded-2xl flex items-center gap-4 hover:scale-105 transition-all shadow-2xl shadow-primary/20 group"
+                        className="bg-primary text-black font-black px-12 py-6 rounded-2xl flex items-center gap-4 hover:scale-105 transition-all shadow-2xl shadow-primary/40 active:scale-95"
                        >
-                          <Play fill="black" size={24} className="group-hover:translate-x-1 transition-transform" />
-                          <span className="text-lg uppercase tracking-widest">Click to Join Party</span>
+                          <Play fill="black" size={28} />
+                          <span className="text-xl uppercase tracking-[0.2em]">Join Watch Party</span>
                        </button>
-                       <p className="mt-6 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Browser requires interaction to start audio</p>
+                       <p className="mt-8 text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Tap to enable audio & sync</p>
                     </div>
                   )}
                 </>
@@ -228,7 +253,7 @@ const RoomPage = () => {
 
            <div className="mt-8 grid grid-cols-1 md:grid-cols-12 gap-6 pb-12">
               <div className="md:col-span-8 bg-zinc-900/40 p-8 rounded-3xl border border-white/5">
-                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-6">Load Stream</h3>
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-6 font-bold">Load Stream</h3>
                  <div className="flex gap-4">
                     <input 
                       type="text" 
@@ -240,14 +265,17 @@ const RoomPage = () => {
                     <button 
                       onClick={handleUrlChange} 
                       disabled={!inputUrl.trim()} 
-                      className="bg-primary hover:bg-primary/80 text-black font-black px-8 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest"
+                      className="bg-primary hover:bg-primary/80 text-black font-black px-8 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest disabled:opacity-30"
                     >
                       Play
                     </button>
+                    <button onClick={addToPlaylist} disabled={!inputUrl.trim()} className="bg-zinc-800 hover:bg-zinc-700 text-white font-black px-6 rounded-xl transition-all border border-white/5">
+                      <Plus size={18} />
+                    </button>
                  </div>
-                 {(!canControl && members.length > 0) && (
+                 {(!canControl && !isHost) && (
                    <p className="mt-4 text-[10px] text-red-500/80 font-black uppercase tracking-widest flex items-center gap-2">
-                     <ShieldOff size={14} /> Restricted: Room owner controls playback
+                     <ShieldOff size={14} /> Restricted: Only the host or moderators can change the video
                    </p>
                  )}
               </div>
@@ -256,14 +284,20 @@ const RoomPage = () => {
                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-6 flex items-center justify-between">Queue</h3>
                  <div className="flex-1 space-y-3 overflow-y-auto max-h-[150px] custom-scrollbar">
                     {playlist.length > 0 ? playlist.map((url, i) => (
-                      <div key={i} className="flex items-center gap-2 group cursor-pointer" onClick={() => canControl && socketRef.current.emit('video-load', { roomId, url })}>
+                      <div key={i} className={`flex items-center gap-2 group ${canControl ? 'cursor-pointer' : ''}`} onClick={() => canControl && socketRef.current.emit('video-load', { roomId, url })}>
                          <span className="text-[10px] font-black text-white/20">{i+1}</span>
-                         <p className="text-[10px] font-bold truncate flex-1 text-white/60 group-hover:text-primary transition-colors">{url}</p>
-                         {canControl && <Trash2 size={12} className="text-white/10 group-hover:text-red-500" onClick={(e) => { e.stopPropagation(); socketRef.current.emit('remove-from-playlist', { roomId, index: i }); }} />}
+                         <p className={`text-[10px] font-bold truncate flex-1 text-white/60 ${canControl ? 'group-hover:text-primary' : ''} transition-colors`}>{url}</p>
+                         {canControl && (
+                           <Trash2 
+                             size={12} 
+                             className="text-white/10 group-hover:text-red-500 transition-colors" 
+                             onClick={(e) => { e.stopPropagation(); socketRef.current.emit('remove-from-playlist', { roomId, index: i }); }} 
+                           />
+                         )}
                       </div>
                     )) : (
                       <div className="h-full flex flex-col items-center justify-center opacity-10">
-                         <span className="text-[9px] font-black uppercase">Queue is empty</span>
+                         <span className="text-[9px] font-black uppercase tracking-widest">Queue is empty</span>
                       </div>
                     )}
                  </div>
@@ -274,7 +308,7 @@ const RoomPage = () => {
         <aside className="w-[400px] border-l border-white/5 bg-zinc-950 flex flex-col">
            <div className="flex-1 flex flex-col min-h-0 border-b border-white/5">
               <div className="h-14 flex items-center px-6 border-b border-white/5 bg-zinc-900/20">
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Live chat</h4>
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Live chat</h4>
               </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                  {messages.map((msg, i) => (
@@ -298,7 +332,7 @@ const RoomPage = () => {
 
            <div className="h-80 flex flex-col bg-black">
               <div className="h-14 flex items-center px-6 border-b border-white/5 bg-zinc-900/20">
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Members ({members.length})</h4>
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Members ({members.length})</h4>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
                  {members.map(m => (
@@ -312,12 +346,16 @@ const RoomPage = () => {
                              <h5 className="text-sm font-black truncate">{m.name}</h5>
                              {m.isHost && <Crown size={12} className="text-yellow-500" />}
                           </div>
+                          <p className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${m.canControl ? 'text-primary' : 'text-white/20'}`}>
+                             {m.canControl ? <Shield size={10} /> : <ShieldOff size={10} />}
+                             {m.canControl ? "Moderator" : "Viewer"}
+                          </p>
                        </div>
                        {isHost && m.id !== socketRef.current?.id && (
                           <div className="relative">
                              <MoreVertical className="text-white/10 cursor-pointer hover:text-white" size={16} onClick={() => setShowMemberMenu(showMemberMenu === m.id ? null : m.id)} />
                              {showMemberMenu === m.id && (
-                                <div className="absolute right-0 bottom-full mb-2 w-48 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-[100] p-2">
+                                <div className="absolute right-0 bottom-full mb-2 w-48 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-[100] p-2 animate-in slide-in-from-bottom-2">
                                    <button onClick={() => togglePermission(m.id, !m.canControl)} className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-white/60 hover:text-primary">
                                       {m.canControl ? <ShieldOff size={14} /> : <Shield size={14} />} {m.canControl ? "Revoke Control" : "Grant Control"}
                                    </button>
