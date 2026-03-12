@@ -6,7 +6,11 @@ const roomSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  hostId: {
+  hostId: { // This will still exist but we'll prioritize creatorEmail
+    type: String,
+    required: true
+  },
+  creatorEmail: {
     type: String,
     required: true
   },
@@ -22,8 +26,12 @@ const roomSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  playlist: {
+    type: [String],
+    default: []
+  },
   members: [{
-    id: String,
+    id: String, // socket.id
     name: String,
     email: String,
     joinedAt: { type: Date, default: Date.now }

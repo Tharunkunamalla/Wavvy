@@ -87,22 +87,40 @@ const LandingPage = () => {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-6">
-            <button 
-              onClick={handleGetStarted}
-              className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all text-lg shadow-2xl shadow-white/10"
-            >
-              <Play fill="black" size={20} />
-              Get Started Free
-            </button>
-            <div className="flex flex-col justify-center">
-               <div className="flex items-center gap-2 text-xs font-bold text-white/20 tracking-widest uppercase">
-                  <Monitor size={14} />
-                  <span>Free Forever</span>
-                  <span className="w-1 h-1 bg-white/20 rounded-full mx-1"></span>
-                  <Github size={14} />
-                  <span>No Credit Card</span>
-               </div>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button 
+                onClick={handleGetStarted}
+                className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all text-lg shadow-2xl shadow-white/10"
+              >
+                <Plus fill="black" size={20} />
+                Create Room
+              </button>
+              <div className="relative flex-1 max-w-sm">
+                <input 
+                  type="text" 
+                  placeholder="Paste Room ID to join..." 
+                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-5 pl-12 pr-4 focus:outline-none focus:border-primary/50 transition-all text-sm font-bold h-full"
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                {roomId.trim() && (
+                  <button 
+                    onClick={handleJoinRoom}
+                    className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all"
+                  >
+                    Join
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] font-black text-white/20 tracking-[0.2em] uppercase">
+               <Monitor size={14} />
+               <span>Free Forever</span>
+               <span className="w-1 h-1 bg-white/20 rounded-full mx-1"></span>
+               <Github size={14} />
+               <span>No Credit Card</span>
             </div>
           </div>
         </div>

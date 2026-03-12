@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactPlayer from 'react-player';
-import { Send, Users, Video, Link, LogOut, Play, Plus, Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, XCircle, Mic, MicOff } from 'lucide-react';
+import { Send, Users, Video, Link, LogOut, Play, Plus, Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, XCircle, Trash2 } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
 
@@ -25,7 +25,7 @@ const RoomPage = () => {
   const [playlist, setPlaylist] = useState([]);
   const [localStream, setLocalStream] = useState(null);
   const localStreamRef = useRef(null);
-  const [remoteStreams, setRemoteStreams] = useState({}); // { sid: { stream, name } }
+  const [remoteStreams, setRemoteStreams] = useState({}); 
   const peerConnections = useRef({});
   
   const user = JSON.parse(localStorage.getItem('user'));
@@ -48,7 +48,6 @@ const RoomPage = () => {
 
     socketRef.current.on('update-members', (userList) => {
       setMembers(userList);
-      // Cleanup remote streams for users who left
       setRemoteStreams(prev => {
         const next = { ...prev };
         const memberIds = userList.map(m => m.id);
@@ -57,6 +56,10 @@ const RoomPage = () => {
         });
         return next;
       });
+    });
+
+    socketRef.current.on('sync-playlist', (list) => {
+      setPlaylist(list);
     });
 
     socketRef.current.on('kicked', () => {
@@ -106,7 +109,7 @@ const RoomPage = () => {
     });
 
     return () => {
-      socketRef.current.disconnect();
+      socketRef.current?.disconnect();
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -150,25 +153,17 @@ const RoomPage = () => {
   };
 
   const handleGrantAll = () => {
-    members.forEach(m => {
-       if(!m.isHost) togglePermission(m.id, true);
-    });
+    members.forEach(m => { if(!m.isHost) togglePermission(m.id, true); });
   };
 
   const handleRevokeAll = () => {
-    members.forEach(m => {
-       if(!m.isHost) togglePermission(m.id, false);
-    });
+    members.forEach(m => { if(!m.isHost) togglePermission(m.id, false); });
   };
 
   const sendMessage = (e) => {
     e.preventDefault();
     if (message.trim()) {
-      socketRef.current.emit('send-message', {
-        roomId,
-        message: message.trim(),
-        sender: user.name
-      });
+      socketRef.current.emit('send-message', { roomId, message: message.trim(), sender: user.name });
       setMessage('');
     }
   };
@@ -177,38 +172,44 @@ const RoomPage = () => {
     e.preventDefault();
     if (inputUrl.trim()) {
       socketRef.current.emit('video-load', { roomId, url: inputUrl.trim() });
-      setIsPlaying(true);
       setInputUrl('');
+    }
+  };
+
+  const addToPlaylist = () => {
+    if (inputUrl.trim()) {
+      socketRef.current.emit('add-to-playlist', { roomId, url: inputUrl.trim() });
+      setInputUrl('');
+    }
+  };
+
+  const playFromPlaylist = (url) => {
+    if (canControl) {
+      socketRef.current.emit('video-load', { roomId, url });
+    }
+  };
+
+  const removeFromPlaylist = (index) => {
+    if (canControl) {
+      socketRef.current.emit('remove-from-playlist', { roomId, index });
     }
   };
 
   const handlePlay = () => {
     if (isSyncing.current) return;
-    socketRef.current.emit('video-state-change', {
-      roomId,
-      state: 'playing',
-      time: playerRef.current.getCurrentTime()
-    });
+    socketRef.current.emit('video-state-change', { roomId, state: 'playing', time: playerRef.current.getCurrentTime() });
     setIsPlaying(true);
   };
 
   const handlePause = () => {
     if (isSyncing.current) return;
-    socketRef.current.emit('video-state-change', {
-      roomId,
-      state: 'paused',
-      time: playerRef.current.getCurrentTime()
-    });
+    socketRef.current.emit('video-state-change', { roomId, state: 'paused', time: playerRef.current.getCurrentTime() });
     setIsPlaying(false);
   };
 
   const handleSeek = (time) => {
     if (isSyncing.current) return;
-    socketRef.current.emit('video-state-change', {
-      roomId,
-      state: 'seeking',
-      time
-    });
+    socketRef.current.emit('video-state-change', { roomId, state: 'seeking', time });
   };
 
   const startCall = async () => {
@@ -230,8 +231,9 @@ const RoomPage = () => {
     }
   };
 
-  const isHost = members.find(m => m.id === socketRef.current?.id)?.isHost;
-  const canControl = members.find(m => m.id === socketRef.current?.id)?.canControl;
+  const me = members.find(m => m.id === socketRef.current?.id);
+  const isHost = me?.isHost;
+  const canControl = me?.canControl;
 
   return (
     <div className="flex flex-col h-screen bg-black text-white font-sans overflow-hidden">
@@ -253,46 +255,23 @@ const RoomPage = () => {
              onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link Copied!'); }}
              className="text-white/40 hover:text-white transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
            >
-             <Link size={16} />
-             Share Link
+             <Link size={16} /> Share Link
            </button>
-           <button 
-             onClick={() => navigate('/')}
-             className="text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
-           >
-             <LogOut size={16} />
-             Exit Room
+           <button onClick={() => navigate('/')} className="text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+             <LogOut size={16} /> Exit Room
            </button>
         </div>
       </nav>
 
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 flex flex-col p-8 overflow-y-auto custom-scrollbar lg:pr-4">
-          <div className="relative aspect-video bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 ring-1 ring-white/10 group">
+          <div className="relative aspect-video bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 ring-1 ring-white/10">
              {videoUrl ? (
-               <ReactPlayer
-                 key={videoUrl}
-                 ref={playerRef}
-                 url={videoUrl}
-                 width="100%"
-                 height="100%"
-                 playing={isPlaying}
-                 controls={true}
-                 playsinline={true}
-                 onPlay={handlePlay}
-                 onPause={handlePause}
-                 onSeek={handleSeek}
-                 config={{
-                   youtube: {
-                     playerVars: { autoplay: 1, modestbranding: 1, rel: 0, origin: window.location.origin }
-                   }
-                 }}
-               />
+               <ReactPlayer key={videoUrl} ref={playerRef} url={videoUrl} width="100%" height="100%" playing={isPlaying} controls={true} playsinline={true} onPlay={handlePlay} onPause={handlePause} onSeek={handleSeek} config={{ youtube: { playerVars: { autoplay: 1, modestbranding: 1, rel: 0, origin: window.location.origin } } }} />
              ) : (
                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/5">
                  <Video size={120} strokeWidth={1} className="mb-6 animate-pulse" />
                  <p className="text-2xl font-black italic tracking-tighter">No video loaded</p>
-                 <p className="text-sm font-medium text-white/20 mt-2">Add a video URL below to start watching together</p>
                </div>
              )}
           </div>
@@ -301,27 +280,17 @@ const RoomPage = () => {
              <div className="lg:col-span-3 space-y-8">
                 <div className="bg-zinc-900/50 p-8 rounded-[2rem] border border-white/5">
                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40 mb-6">Load Stream</h3>
-                   <form onSubmit={handleUrlChange} className="relative">
-                      <input 
-                        type="text" 
-                        placeholder="Paste YouTube, Dropbox, or direct .mp4 URL..." 
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 font-bold text-white/80 focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50"
-                        value={inputUrl}
-                        onChange={(e) => setInputUrl(e.target.value)}
-                        disabled={!canControl}
-                      />
-                      <button 
-                        disabled={!canControl}
-                        className="absolute right-2 top-2 bottom-2 bg-primary hover:bg-primary/80 text-black font-black px-8 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest disabled:opacity-50"
-                      >
-                        Load Video
-                      </button>
-                   </form>
-                   {!canControl && <p className="mt-2 text-[10px] text-red-500 font-bold uppercase">You don't have permission to load videos</p>}
-                   <div className="mt-4 flex flex-wrap gap-4 text-[10px] font-bold text-white/30 uppercase tracking-widest">
+                   <div className="flex gap-4">
+                      <div className="relative flex-1">
+                        <input type="text" placeholder="Paste YouTube, Dropbox, or direct URL..." className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 font-bold text-white/80 focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50" value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} disabled={!canControl} />
+                      </div>
+                      <button onClick={handleUrlChange} disabled={!canControl || !inputUrl.trim()} className="h-full bg-primary hover:bg-primary/80 text-black font-black px-8 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest disabled:opacity-50">Load Now</button>
+                      <button onClick={addToPlaylist} disabled={!inputUrl.trim()} className="h-full bg-zinc-800 hover:bg-zinc-700 text-white font-black px-6 rounded-xl transition-all uppercase text-xs tracking-widest border border-white/5"><Plus size={18} /></button>
+                   </div>
+                   {!canControl && <p className="mt-4 text-[10px] text-red-500 font-bold uppercase tracking-widest flex items-center gap-2"><XCircle size={12} /> You don't have permission to load videos</p>}
+                   <div className="mt-6 flex flex-wrap gap-4 text-[10px] font-bold text-white/30 uppercase tracking-widest">
                       <span className="flex items-center gap-1 text-primary"><Shield size={10} /> YouTube Safe</span>
                       <span className="flex items-center gap-1 text-primary"><Shield size={10} /> MP4 Direct</span>
-                      <span className="flex items-center gap-1 text-primary"><Shield size={10} /> No Buffering</span>
                    </div>
                 </div>
 
@@ -349,29 +318,28 @@ const RoomPage = () => {
              </div>
 
              <div className="space-y-6">
-                <button 
-                  onClick={startCall}
-                  className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest transition-all shadow-2xl ${localStream ? 'bg-red-500 text-white' : 'bg-primary text-black hover:scale-[1.02]'}`}
-                >
-                  <Video size={18} />
-                  {localStream ? 'End Camera' : 'Start Video Call'}
+                <button onClick={startCall} className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest transition-all shadow-2xl ${localStream ? 'bg-red-500 text-white' : 'bg-primary text-black hover:scale-[1.02]'}`}>
+                  <Video size={18} /> {localStream ? 'End Camera' : 'Start Video Call'}
                 </button>
 
                 <div className="bg-zinc-900/50 rounded-[2rem] border border-white/5 p-6 h-fit">
                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Up Next</h4>
-                      <Plus className="text-white/20 cursor-pointer hover:text-white" size={16} />
+                      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Up Next (Queue)</h4>
+                      <Clock size={16} className="text-white/20" />
                    </div>
                    <div className="space-y-3">
                       {playlist.length > 0 ? playlist.map((url, i) => (
-                        <div key={i} className="bg-black/40 p-3 rounded-xl border border-white/5 flex items-center gap-3 group">
+                        <div key={i} className="bg-black/40 p-4 rounded-xl border border-white/5 flex items-center gap-3 group relative overflow-hidden">
                            <span className="text-[10px] font-black text-white/20 group-hover:text-primary transition-colors">{i+1}</span>
-                           <p className="text-[10px] font-bold truncate text-white/40">{url}</p>
+                           <p onClick={() => playFromPlaylist(url)} className={`text-[10px] font-bold truncate flex-1 cursor-pointer transition-colors ${canControl ? 'hover:text-primary' : ''}`}>{url}</p>
+                           {canControl && (
+                             <button onClick={() => removeFromPlaylist(i)} className="text-white/10 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
+                           )}
                         </div>
                       )) : (
-                        <div className="py-8 flex flex-col items-center justify-center text-center">
-                           <Monitor size={24} className="text-white/5 mb-2" />
-                           <p className="text-[10px] font-bold text-white/10 uppercase tracking-widest">Queue is empty</p>
+                        <div className="py-8 flex flex-col items-center justify-center text-center opacity-20">
+                           <Monitor size={24} className="mb-2" />
+                           <p className="text-[10px] font-bold uppercase tracking-widest">Queue is empty</p>
                         </div>
                       )}
                    </div>
@@ -382,112 +350,52 @@ const RoomPage = () => {
 
         <aside className="w-[400px] border-l border-white/5 bg-black flex flex-col relative">
            <div className="flex border-b border-white/5 px-6 pt-4 gap-6">
-              <button 
-                onClick={() => setActiveTab('chat')}
-                className={`pb-4 text-xs font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'chat' ? 'text-primary' : 'text-white/20'}`}
-              >
-                Chat
-                {activeTab === 'chat' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary"></div>}
-              </button>
-              <button 
-                onClick={() => setActiveTab('members')}
-                className={`pb-4 text-xs font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'members' ? 'text-primary' : 'text-white/20'}`}
-              >
-                Members ({members.length})
-                {activeTab === 'members' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary"></div>}
-              </button>
+              {['chat', 'members'].map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-4 text-xs font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === tab ? 'text-primary' : 'text-white/20'}`}>
+                  {tab} {tab === 'members' && `(${members.length})`}
+                  {activeTab === tab && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary"></div>}
+                </button>
+              ))}
            </div>
 
            {activeTab === 'chat' ? (
              <>
                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                  {messages.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
-                       <Send size={40} strokeWidth={1} className="mb-4" />
-                       <p className="text-xs font-black uppercase tracking-widest">No messages yet</p>
-                    </div>
-                  )}
+                  {messages.length === 0 && <div className="h-full flex flex-col items-center justify-center text-center opacity-20"><Send size={40} strokeWidth={1} className="mb-4" /><p className="text-xs font-black uppercase tracking-widest">No messages yet</p></div>}
                   {messages.map((msg, i) => (
                     <div key={i} className={`flex flex-col ${msg.sender === user.name ? 'items-end' : 'items-start'}`}>
-                       <div className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium ${msg.sender === user.name ? 'bg-zinc-800 text-white rounded-tr-none border border-white/5' : 'bg-primary text-black rounded-tl-none'}`}>
-                          {msg.message}
-                       </div>
-                       <span className="text-[10px] font-black text-white/20 mt-2 px-1 uppercase tracking-widest">
-                         {msg.sender === user.name ? 'You' : msg.sender}
-                       </span>
+                       <div className={`max-w-[85%] p-4 rounded-2xl text-sm font-medium ${msg.sender === user.name ? 'bg-zinc-800 text-white rounded-tr-none border border-white/5' : 'bg-primary text-black rounded-tl-none'}`}>{msg.message}</div>
+                       <span className="text-[10px] font-black text-white/20 mt-2 px-1 uppercase tracking-widest">{msg.sender === user.name ? 'You' : msg.sender}</span>
                     </div>
                   ))}
                </div>
-               <form onSubmit={sendMessage} className="p-6 border-t border-white/5">
-                  <div className="relative">
-                     <input 
-                       type="text" 
-                       placeholder="Type a message..." 
-                       className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-5 pr-14 text-sm font-medium focus:outline-none focus:border-primary/50 transition-all shadow-xl"
-                       value={message}
-                       onChange={(e) => setMessage(e.target.value)}
-                     />
-                     <button className="absolute right-2 top-2 bottom-2 w-10 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl flex items-center justify-center transition-all">
-                       <Send size={16} />
-                     </button>
-                  </div>
-               </form>
+               <form onSubmit={sendMessage} className="p-6 border-t border-white/5"><div className="relative"><input type="text" placeholder="Type a message..." className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 pl-5 pr-14 text-sm font-medium focus:outline-none focus:border-primary/50 transition-all shadow-xl" value={message} onChange={(e) => setMessage(e.target.value)} /><button className="absolute right-2 top-2 bottom-2 w-10 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl flex items-center justify-center transition-all"><Send size={16} /></button></div></form>
              </>
            ) : (
              <div className="flex-1 flex flex-col p-6">
                 {isHost && (
                   <div className="bg-zinc-900 border border-white/5 rounded-3xl p-6 mb-6">
                     <div className="flex gap-2">
-                        <button onClick={handleGrantAll} className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-primary/20 transition-all flex items-center justify-center gap-2">
-                            <Shield size={12} /> Grant All
-                        </button>
-                        <button onClick={handleRevokeAll} className="flex-1 bg-white/5 hover:bg-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2">
-                            <ShieldOff size={12} /> Revoke All
-                        </button>
+                        <button onClick={handleGrantAll} className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-primary/20 transition-all flex items-center justify-center gap-2"><Shield size={12} /> Grant All</button>
+                        <button onClick={handleRevokeAll} className="flex-1 bg-white/5 hover:bg-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2"><ShieldOff size={12} /> Revoke All</button>
                     </div>
                   </div>
                 )}
-
                 <div className="space-y-3 overflow-y-auto flex-1 custom-scrollbar">
                    {members.map(m => (
                      <div key={m.id} className="bg-zinc-900/50 p-4 rounded-2xl border border-white/5 flex items-center gap-4 group">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-black relative">
-                           {m.name.charAt(0)}
-                           <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-zinc-900"></div>
-                        </div>
+                        <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-black relative">{m.name.charAt(0)}<div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-zinc-900"></div></div>
                         <div className="flex-1 min-w-0">
-                           <div className="flex items-center gap-2">
-                              <h4 className="text-sm font-black truncate">{m.name}</h4>
-                              {m.isHost && <Crown size={12} className="text-yellow-500" />}
-                           </div>
-                           <p className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${m.canControl ? 'text-primary' : 'text-white/20'}`}>
-                              {m.canControl ? <Shield size={10} /> : <ShieldOff size={10} />}
-                              {m.canControl ? "Can control" : "View only"}
-                           </p>
+                           <div className="flex items-center gap-2"><h4 className="text-sm font-black truncate">{m.name}</h4>{m.isHost && <Crown size={12} className="text-yellow-500" />}</div>
+                           <p className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${m.canControl ? 'text-primary' : 'text-white/20'}`}>{m.canControl ? <Shield size={10} /> : <ShieldOff size={10} />} {m.canControl ? "Can control" : "View only"}</p>
                         </div>
                         {isHost && m.id !== socketRef.current?.id && (
                           <div className="relative">
-                            <MoreVertical 
-                              className="text-white/10 cursor-pointer hover:text-white" 
-                              size={16} 
-                              onClick={() => setShowMemberMenu(showMemberMenu === m.id ? null : m.id)}
-                            />
+                            <MoreVertical className="text-white/10 cursor-pointer hover:text-white" size={16} onClick={() => setShowMemberMenu(showMemberMenu === m.id ? null : m.id)} />
                             {showMemberMenu === m.id && (
                               <div className="absolute right-0 top-6 w-48 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-[100] p-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                                 <button 
-                                  onClick={() => togglePermission(m.id, !m.canControl)}
-                                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-white/60 hover:text-primary"
-                                 >
-                                    {m.canControl ? <ShieldOff size={14} /> : <Shield size={14} />}
-                                    {m.canControl ? "Revoke Control" : "Grant Control"}
-                                 </button>
-                                 <button 
-                                  onClick={() => handleKick(m.id)}
-                                  className="w-full text-left px-4 py-3 rounded-xl hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-red-500/60 hover:text-red-500"
-                                 >
-                                    <XCircle size={14} />
-                                    Kick Participant
-                                 </button>
+                                 <button onClick={() => togglePermission(m.id, !m.canControl)} className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-white/60 hover:text-primary">{m.canControl ? <ShieldOff size={14} /> : <Shield size={14} />} {m.canControl ? "Revoke Control" : "Grant Control"}</button>
+                                 <button onClick={() => handleKick(m.id)} className="w-full text-left px-4 py-3 rounded-xl hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-red-500/60 hover:text-red-500"><XCircle size={14} /> Kick Participant</button>
                               </div>
                             )}
                           </div>
@@ -495,13 +403,7 @@ const RoomPage = () => {
                      </div>
                    ))}
                 </div>
-
-                <button 
-                  onClick={() => navigate('/')}
-                  className="mt-8 bg-red-500/5 hover:bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest py-4 rounded-2xl border border-red-500/10 transition-all flex items-center justify-center gap-2"
-                >
-                   <LogOut size={16} /> Leave Room
-                </button>
+                <button onClick={() => navigate('/')} className="mt-8 bg-black hover:bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest py-4 rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-2"><LogOut size={16} /> Leave Room</button>
              </div>
            )}
         </aside>
