@@ -50,6 +50,7 @@ body {
     radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.1) 0, transparent 50%);
 }
 
+/* Trigger Rebuild for CSS */
 .mirror {
   transform: scaleX(-1);
 }
