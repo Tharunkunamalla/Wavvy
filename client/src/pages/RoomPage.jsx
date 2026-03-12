@@ -29,7 +29,7 @@ const RoomPage = () => {
   const peerConnections = useRef({});
   
   const user = JSON.parse(localStorage.getItem('user'));
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'members'
+  const [activeTab, setActiveTab] = useState('chat');
 
   useEffect(() => {
     if (!user) {
@@ -67,7 +67,6 @@ const RoomPage = () => {
       setPlaylist(newPlaylist);
     });
 
-    // WebRTC
     socketRef.current.on('user-started-call', async ({ sender }) => {
       if (localStreamRef.current) {
         const pc = createPeerConnection(sender);
@@ -75,6 +74,24 @@ const RoomPage = () => {
         await pc.setLocalDescription(offer);
         socketRef.current.emit('video-offer', { roomId, offer });
       }
+    });
+
+    socketRef.current.on('video-offer', async ({ offer, sender }) => {
+      const pc = createPeerConnection(sender);
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socketRef.current.emit('video-answer', { roomId, answer, target: sender });
+    });
+
+    socketRef.current.on('video-answer', async ({ answer, sender }) => {
+      const pc = peerConnections.current[sender];
+      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    });
+
+    socketRef.current.on('new-ice-candidate', async ({ candidate, sender }) => {
+      const pc = peerConnections.current[sender];
+      if (pc) await pc.addIceCandidate(new RTCIceCandidate(candidate));
     });
 
     return () => {
@@ -124,7 +141,7 @@ const RoomPage = () => {
     e.preventDefault();
     if (inputUrl.trim()) {
       socketRef.current.emit('video-load', { roomId, url: inputUrl.trim() });
-      setIsPlaying(true); // Auto play on load
+      setIsPlaying(true);
       setInputUrl('');
     }
   };
@@ -182,7 +199,7 @@ const RoomPage = () => {
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
             <Play className="text-white fill-current" size={20} />
-            <span className="text-xl font-black tracking-tighter italic">SyncWatch</span>
+            <span className="text-xl font-black tracking-tighter italic">Wavvy</span>
           </div>
           <div className="h-6 w-px bg-white/10"></div>
           <div className="flex flex-col">
@@ -216,15 +233,22 @@ const RoomPage = () => {
           <div className="relative aspect-video bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/5 ring-1 ring-white/10 group">
              {videoUrl ? (
                <ReactPlayer
+                 key={videoUrl}
                  ref={playerRef}
                  url={videoUrl}
                  width="100%"
                  height="100%"
                  playing={isPlaying}
                  controls={true}
+                 playsinline={true}
                  onPlay={handlePlay}
                  onPause={handlePause}
                  onSeek={handleSeek}
+                 config={{
+                   youtube: {
+                     playerVars: { autoplay: 1, modestbranding: 1, rel: 0 }
+                   }
+                 }}
                />
              ) : (
                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/5">
@@ -248,14 +272,14 @@ const RoomPage = () => {
                         value={inputUrl}
                         onChange={(e) => setInputUrl(e.target.value)}
                       />
-                      <button className="absolute right-2 top-2 bottom-2 bg-white/10 hover:bg-white/20 text-white font-black px-8 rounded-xl transition-all border border-white/10 uppercase text-xs tracking-widest">
+                      <button className="absolute right-2 top-2 bottom-2 bg-primary hover:bg-primary/80 text-black font-black px-8 rounded-xl transition-all shadow-lg uppercase text-xs tracking-widest">
                         Load Video
                       </button>
                    </form>
                    <div className="mt-4 flex flex-wrap gap-4 text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                      <span className="flex items-center gap-1"><Shield size={10} className="text-green-500" /> YouTube Safe</span>
-                      <span className="flex items-center gap-1"><Shield size={10} className="text-green-500" /> MP4 Direct</span>
-                      <span className="flex items-center gap-1"><Shield size={10} className="text-green-500" /> No Buffering</span>
+                      <span className="flex items-center gap-1 text-primary"><Shield size={10} /> YouTube Safe</span>
+                      <span className="flex items-center gap-1 text-primary"><Shield size={10} /> MP4 Direct</span>
+                      <span className="flex items-center gap-1 text-primary"><Shield size={10} /> No Buffering</span>
                    </div>
                 </div>
 
@@ -267,10 +291,18 @@ const RoomPage = () => {
                           <video ref={el => { if(el) el.srcObject = localStream; }} autoPlay muted className="w-full h-full object-cover mirror" />
                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-3 flex items-center justify-between">
                              <span className="text-[10px] font-black text-primary uppercase tracking-widest">You</span>
-                             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                             <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
                           </div>
                        </div>
                      )}
+                     {Object.entries(remoteStreams).map(([sid, stream]) => (
+                        <div key={sid} className="aspect-video bg-zinc-900 rounded-2xl overflow-hidden border border-white/5 relative shadow-2xl">
+                           <video ref={el => { if(el) el.srcObject = stream; }} autoPlay className="w-full h-full object-cover" />
+                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black to-transparent p-3 flex items-center justify-between">
+                              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Participant</span>
+                           </div>
+                        </div>
+                     ))}
                   </div>
                 )}
              </div>
@@ -278,10 +310,10 @@ const RoomPage = () => {
              <div className="space-y-6">
                 <button 
                   onClick={startCall}
-                  className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest transition-all shadow-2xl ${localStream ? 'bg-red-500 text-white' : 'bg-green-500 text-black hover:scale-[1.02]'}`}
+                  className={`w-full py-5 rounded-2xl flex items-center justify-center gap-3 font-black uppercase tracking-widest transition-all shadow-2xl ${localStream ? 'bg-red-500 text-white' : 'bg-primary text-black hover:scale-[1.02]'}`}
                 >
                   <Video size={18} />
-                  {localStream ? 'End Call' : 'Start Video Call'}
+                  {localStream ? 'End Camera' : 'Start Video Call'}
                 </button>
 
                 <div className="bg-zinc-900/50 rounded-[2rem] border border-white/5 p-6 h-fit">
@@ -371,10 +403,10 @@ const RoomPage = () => {
              <div className="flex-1 flex flex-col p-6">
                 <div className="bg-zinc-900 border border-white/5 rounded-3xl p-6 mb-6">
                    <div className="flex gap-2">
-                      <button className="flex-1 bg-green-500/10 hover:bg-green-500/20 text-green-500 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-green-500/20 transition-all flex items-center justify-center gap-2">
+                      <button className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-primary/20 transition-all flex items-center justify-center gap-2">
                          <Shield size={12} /> Grant All
                       </button>
-                      <button className="flex-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-orange-500/20 transition-all flex items-center justify-center gap-2">
+                      <button className="flex-1 bg-white/5 hover:bg-white/10 text-white/40 text-[10px] font-black uppercase tracking-widest py-3 rounded-xl border border-white/5 transition-all flex items-center justify-center gap-2">
                          <ShieldOff size={12} /> Revoke All
                       </button>
                    </div>
@@ -385,7 +417,7 @@ const RoomPage = () => {
                      <div key={m.id} className="bg-zinc-900/50 p-4 rounded-2xl border border-white/5 flex items-center gap-4 group">
                         <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-black relative">
                            {m.name.charAt(0)}
-                           <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-zinc-900"></div>
+                           <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary rounded-full border-2 border-zinc-900"></div>
                         </div>
                         <div className="flex-1 min-w-0">
                            <div className="flex items-center gap-2">

@@ -46,7 +46,7 @@ const LandingPage = () => {
       <nav className="h-20 flex items-center justify-between px-12 z-50">
         <div className="flex items-center gap-2">
           <Play className="text-white fill-current" size={24} />
-          <span className="text-2xl font-black tracking-tighter italic">SyncWatch</span>
+          <span className="text-2xl font-black tracking-tighter italic">Wavvy</span>
         </div>
         <div className="flex items-center gap-6">
           {!user ? (
@@ -70,7 +70,7 @@ const LandingPage = () => {
           <div className="space-y-4">
             <h1 className="text-7xl font-black leading-[1.1] tracking-tighter">
               Watch Together, <br />
-              <span className="text-white/40">Stay Synced</span>
+              <span className="text-primary italic">Perfectly Synced</span>
             </h1>
             <p className="text-xl text-white/40 leading-relaxed max-w-lg font-medium">
               Experience movies and shows with friends in perfect harmony. 
@@ -158,7 +158,7 @@ const LandingPage = () => {
             <span className="hover:text-white transition-colors cursor-pointer">Contact Us</span>
          </div>
          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 mt-6 sm:mt-0">
-           © 2026 SyncWatch. Watch together, wherever you are.
+           © 2026 Wavvy. Watch together, wherever you are.
          </p>
       </footer>
 
