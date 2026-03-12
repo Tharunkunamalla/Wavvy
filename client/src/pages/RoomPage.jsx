@@ -10,6 +10,8 @@ const RoomPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const socketRef = useRef();
+  const playerRef = useRef(null);
+  const isSyncing = useRef(false);
   
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
@@ -28,8 +30,16 @@ const RoomPage = () => {
     });
 
     socketRef.current.on('sync-video', ({ state, time }) => {
+      isSyncing.current = true;
       setIsPlaying(state === 'playing');
-      // Synchronization logic for time will be added in phase 4
+      if (playerRef.current && Math.abs(playerRef.current.getCurrentTime() - time) > 1) {
+        playerRef.current.seekTo(time, 'seconds');
+      }
+      setTimeout(() => { isSyncing.current = false; }, 500);
+    });
+
+    socketRef.current.on('sync-video-load', ({ url }) => {
+      setVideoUrl(url);
     });
 
     socketRef.current.on('user-joined', ({ userId }) => {
@@ -47,7 +57,7 @@ const RoomPage = () => {
       socketRef.current.emit('send-message', {
         roomId,
         message: message.trim(),
-        sender: 'You' // Will replace with username later
+        sender: 'You'
       });
       setMessage('');
     }
@@ -56,9 +66,38 @@ const RoomPage = () => {
   const handleUrlChange = (e) => {
     e.preventDefault();
     if (inputUrl.trim()) {
-      setVideoUrl(inputUrl);
-      // socketRef.current.emit('video-load', inputUrl);
+      socketRef.current.emit('video-load', { roomId, url: inputUrl });
+      setInputUrl('');
     }
+  };
+
+  const handlePlay = () => {
+    if (isSyncing.current) return;
+    socketRef.current.emit('video-state-change', {
+      roomId,
+      state: 'playing',
+      time: playerRef.current.getCurrentTime()
+    });
+    setIsPlaying(true);
+  };
+
+  const handlePause = () => {
+    if (isSyncing.current) return;
+    socketRef.current.emit('video-state-change', {
+      roomId,
+      state: 'paused',
+      time: playerRef.current.getCurrentTime()
+    });
+    setIsPlaying(false);
+  };
+
+  const handleSeek = (time) => {
+    if (isSyncing.current) return;
+    socketRef.current.emit('video-state-change', {
+      roomId,
+      state: 'seeking',
+      time
+    });
   };
 
   return (
@@ -72,7 +111,13 @@ const RoomPage = () => {
           <h1 className="text-xl font-bold">Room: <span className="text-primary">{roomId}</span></h1>
         </div>
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm">
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              alert("Link copied to clipboard!");
+            }}
+            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm"
+          >
             <Link size={18} />
             Copy Link
           </button>
@@ -93,18 +138,20 @@ const RoomPage = () => {
           <div className="relative aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl glass-card border-white/5">
             {videoUrl ? (
               <ReactPlayer
+                ref={playerRef}
                 url={videoUrl}
                 width="100%"
                 height="100%"
                 playing={isPlaying}
                 controls={true}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSeek={handleSeek}
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
                 <Video size={64} className="mb-4" />
-                <p className="text-lg">No video loaded yet</p>
+                <p className="text-lg">Paste a video link to start watching together</p>
               </div>
             )}
           </div>
