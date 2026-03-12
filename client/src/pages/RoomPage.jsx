@@ -20,6 +20,10 @@ const RoomPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [members, setMembers] = useState([]);
   const [playlist, setPlaylist] = useState([]);
+  const [localStream, setLocalStream] = useState(null);
+  const localStreamRef = useRef(null);
+  const [remoteStreams, setRemoteStreams] = useState({}); // { socketId: stream }
+  const peerConnections = useRef({}); // { socketId: pc }
 
   useEffect(() => {
     socketRef.current = io(SOCKET_URL);
@@ -51,10 +55,80 @@ const RoomPage = () => {
       setMembers(prev => [...new Set([...prev, userId])]);
     });
 
+    // WebRTC Signaling Handlers
+    socketRef.current.on('user-started-call', async ({ sender }) => {
+      if (localStreamRef.current) {
+        const pc = createPeerConnection(sender);
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socketRef.current.emit('video-offer', { roomId, offer });
+      }
+    });
+
+    socketRef.current.on('video-offer', async ({ offer, sender }) => {
+      const pc = createPeerConnection(sender);
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socketRef.current.emit('video-answer', { roomId, answer, target: sender });
+    });
+
+    socketRef.current.on('video-answer', async ({ answer, sender }) => {
+      const pc = peerConnections.current[sender];
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      }
+    });
+
+    socketRef.current.on('new-ice-candidate', async ({ candidate, sender }) => {
+      const pc = peerConnections.current[sender];
+      if (pc) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
     return () => {
       socketRef.current.disconnect();
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
   }, [roomId]);
+
+  const createPeerConnection = (targetId) => {
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socketRef.current.emit('new-ice-candidate', { roomId, candidate: event.candidate, target: targetId });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      setRemoteStreams(prev => ({ ...prev, [targetId]: event.streams[0] }));
+    };
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current));
+    }
+
+    peerConnections.current[targetId] = pc;
+    return pc;
+  };
+
+  const startCall = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLocalStream(stream);
+      localStreamRef.current = stream;
+      socketRef.current.emit('start-video-call', { roomId });
+    } catch (err) {
+      console.error("Error accessing media devices:", err);
+      alert("Could not access camera/microphone.");
+    }
+  };
 
   const sendMessage = (e) => {
     e.preventDefault();
@@ -212,17 +286,53 @@ const RoomPage = () => {
           </div>
 
           {/* Members & Controls Bar */}
-          <div className="mt-8 flex items-center justify-between p-4 glass-card">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-white/60">
-                <Users size={20} />
-                <span>{members.length + 1} वाचिंग</span>
+          <div className="mt-8 flex flex-col gap-6">
+            <div className="flex items-center justify-between p-4 glass-card">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-white/60">
+                  <Users size={20} />
+                  <span>{members.length + 1} वाचिंग</span>
+                </div>
               </div>
+              <button 
+                onClick={startCall}
+                className={`py-2 px-6 rounded-xl flex items-center gap-2 transition-all ${localStream ? 'bg-red-500/20 text-red-400 border border-red-500/20' : 'btn-secondary'}`}
+              >
+                <Video size={18} />
+                {localStream ? 'End Video Call' : 'Start Video Call'}
+              </button>
             </div>
-            <button className="btn-secondary py-2 flex items-center gap-2">
-              <Video size={18} />
-              Start Video Call
-            </button>
+
+            {/* Video Streams Grid */}
+            {(localStream || Object.keys(remoteStreams).length > 0) && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {localStream && (
+                  <div className="aspect-video bg-black rounded-xl overflow-hidden border border-primary/30 relative shadow-xl">
+                    <video 
+                      ref={(el) => { if (el) el.srcObject = localStream; }} 
+                      autoPlay 
+                      muted 
+                      className="w-full h-full object-cover mirror"
+                    />
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded text-[10px] font-medium border border-white/10 uppercase tracking-wider">
+                      You (Host)
+                    </div>
+                  </div>
+                )}
+                {Object.entries(remoteStreams).map(([socketId, stream]) => (
+                  <div key={socketId} className="aspect-video bg-black rounded-xl overflow-hidden border border-white/10 relative shadow-xl">
+                    <video 
+                      ref={(el) => { if (el) el.srcObject = stream; }} 
+                      autoPlay 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-md rounded text-[10px] font-medium border border-white/10 uppercase tracking-wider">
+                      User {socketId.substring(0, 4)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

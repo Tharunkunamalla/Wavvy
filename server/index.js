@@ -50,6 +50,28 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('receive-message', { message, sender, timestamp: new Date() });
   });
 
+  // WebRTC Signaling
+  socket.on('start-video-call', ({ roomId }) => {
+    socket.to(roomId).emit('user-started-call', { sender: socket.id });
+  });
+
+  socket.on('video-offer', ({ roomId, offer }) => {
+    socket.to(roomId).emit('video-offer', { offer, sender: socket.id });
+  });
+
+  socket.on('video-answer', ({ roomId, answer, target }) => {
+    io.to(target).emit('video-answer', { answer, sender: socket.id });
+  });
+
+  socket.on('new-ice-candidate', ({ roomId, candidate, target }) => {
+    const dest = target || roomId;
+    if (target) {
+      io.to(target).emit('new-ice-candidate', { candidate, sender: socket.id });
+    } else {
+      socket.to(roomId).emit('new-ice-candidate', { candidate, sender: socket.id });
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
