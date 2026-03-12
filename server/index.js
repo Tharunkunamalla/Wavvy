@@ -23,23 +23,51 @@ app.get('/', (req, res) => {
   res.send('Wavvy Server is running');
 });
 
+const Room = require('./models/Room');
+
+// ... (previous imports)
+
 // Socket.io connection logic
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
-  socket.on('join-room', (roomId) => {
+  socket.on('join-room', async (roomId) => {
     socket.join(roomId);
+    
+    // Find or create room in DB
+    let room = await Room.findOne({ roomId });
+    if (!room) {
+      room = await Room.create({
+        roomId,
+        hostId: socket.id,
+        members: [socket.id]
+      });
+    } else {
+      room.members.push(socket.id);
+      await room.save();
+    }
+
+    // Send current state to new user
+    socket.emit('sync-video-load', { url: room.videoUrl });
+    socket.emit('sync-video', { state: room.isPlaying ? 'playing' : 'paused', time: room.currentTime });
+    
     console.log(`User ${socket.id} joined room ${roomId}`);
     socket.to(roomId).emit('user-joined', { userId: socket.id });
   });
 
-  socket.on('video-state-change', ({ roomId, state, time }) => {
-    // state can be 'playing', 'paused', 'seeking'
+  socket.on('video-state-change', async ({ roomId, state, time }) => {
     socket.to(roomId).emit('sync-video', { state, time });
+    
+    // Persist state
+    await Room.findOneAndUpdate({ roomId }, { 
+      isPlaying: state === 'playing',
+      currentTime: time 
+    });
   });
 
-  socket.on('video-load', ({ roomId, url }) => {
+  socket.on('video-load', async ({ roomId, url }) => {
     io.to(roomId).emit('sync-video-load', { url });
+    await Room.findOneAndUpdate({ roomId }, { videoUrl: url, currentTime: 0 });
   });
 
   socket.on('update-playlist', ({ roomId, playlist }) => {
