@@ -24,6 +24,7 @@ const RoomPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [members, setMembers] = useState([]);
   const [playlist, setPlaylist] = useState([]);
+  const [hasInteracted, setHasInteracted] = useState(false);
   
   const user = JSON.parse(localStorage.getItem('user'));
   const [showMemberMenu, setShowMemberMenu] = useState(null);
@@ -59,14 +60,14 @@ const RoomPage = () => {
 
     socketRef.current.on('sync-video-load', ({ url }) => {
       setVideoUrl(url);
-      setIsPlaying(true);
+      if (hasInteracted) setIsPlaying(true);
     });
 
     socketRef.current.on('sync-video', ({ state, time }) => {
       isSyncing.current = true;
-      setIsPlaying(state === 'playing');
+      if (hasInteracted) setIsPlaying(state === 'playing');
+      
       if (playerRef.current) {
-        // Safe check for getCurrentTime
         const internalPlayer = playerRef.current.getInternalPlayer();
         if (internalPlayer) {
           const currentTime = playerRef.current.getCurrentTime();
@@ -81,7 +82,12 @@ const RoomPage = () => {
     return () => {
       socketRef.current?.disconnect();
     };
-  }, [roomId]);
+  }, [roomId, hasInteracted]);
+
+  const handleInteraction = () => {
+    setHasInteracted(true);
+    if (videoUrl) setIsPlaying(true);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -91,6 +97,7 @@ const RoomPage = () => {
 
   const handleUrlChange = (e) => {
     if (e) e.preventDefault();
+    handleInteraction(); // Record interaction
     if (inputUrl.trim()) {
       socketRef.current.emit('video-load', { roomId, url: inputUrl.trim() });
       setInputUrl('');
@@ -99,6 +106,7 @@ const RoomPage = () => {
 
   const sendMessage = (e) => {
     e.preventDefault();
+    handleInteraction(); // Record interaction
     if (message.trim()) {
       socketRef.current.emit('send-message', { roomId, message: message.trim(), sender: user.name });
       setMessage('');
@@ -142,7 +150,7 @@ const RoomPage = () => {
     setIsPlaying(false);
   };
 
-  const me = members.find(m => m.email === user?.email);
+  const me = members.find(m => m.email?.toLowerCase() === user?.email?.toLowerCase());
   const isHost = me?.isHost;
   const canControl = me?.canControl;
 
@@ -173,28 +181,42 @@ const RoomPage = () => {
         <div className="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar">
            <div className="w-full aspect-video bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-white/5 relative">
               {videoUrl ? (
-                <ReactPlayer 
-                  key={videoUrl} 
-                  ref={playerRef} 
-                  url={videoUrl} 
-                  width="100%" 
-                  height="100%" 
-                  playing={isPlaying} 
-                  controls={true} 
-                  onPlay={onPlay} 
-                  onPause={onPause}
-                  config={{ 
-                    youtube: { 
-                      playerVars: { 
-                        autoplay: 1, 
-                        modestbranding: 1, 
-                        rel: 0,
-                        enablejsapi: 1,
-                        origin: window.location.origin
+                <>
+                  <ReactPlayer 
+                    key={videoUrl} 
+                    ref={playerRef} 
+                    url={videoUrl} 
+                    width="100%" 
+                    height="100%" 
+                    playing={isPlaying} 
+                    controls={true} 
+                    onPlay={onPlay} 
+                    onPause={onPause}
+                    config={{ 
+                      youtube: { 
+                        playerVars: { 
+                          autoplay: 1, 
+                          modestbranding: 1, 
+                          rel: 0,
+                          enablejsapi: 1,
+                          origin: window.location.origin
+                        } 
                       } 
-                    } 
-                  }} 
-                />
+                    }} 
+                  />
+                  {!hasInteracted && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-20 animate-in fade-in duration-500">
+                       <button 
+                        onClick={handleInteraction}
+                        className="bg-primary text-black font-black px-10 py-5 rounded-2xl flex items-center gap-4 hover:scale-105 transition-all shadow-2xl shadow-primary/20 group"
+                       >
+                          <Play fill="black" size={24} className="group-hover:translate-x-1 transition-transform" />
+                          <span className="text-lg uppercase tracking-widest">Click to Join Party</span>
+                       </button>
+                       <p className="mt-6 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Browser requires interaction to start audio</p>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white/5">
                    <Video size={100} strokeWidth={1} className="mb-6 opacity-20" />
