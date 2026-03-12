@@ -42,6 +42,10 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('sync-video-load', { url });
   });
 
+  socket.on('update-playlist', ({ roomId, playlist }) => {
+    io.to(roomId).emit('sync-playlist', playlist);
+  });
+
   socket.on('send-message', ({ roomId, message, sender }) => {
     io.to(roomId).emit('receive-message', { message, sender, timestamp: new Date() });
   });

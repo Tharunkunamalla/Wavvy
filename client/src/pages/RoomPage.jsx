@@ -19,6 +19,7 @@ const RoomPage = () => {
   const [inputUrl, setInputUrl] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [members, setMembers] = useState([]);
+  const [playlist, setPlaylist] = useState([]);
 
   useEffect(() => {
     socketRef.current = io(SOCKET_URL);
@@ -40,6 +41,10 @@ const RoomPage = () => {
 
     socketRef.current.on('sync-video-load', ({ url }) => {
       setVideoUrl(url);
+    });
+
+    socketRef.current.on('sync-playlist', (newPlaylist) => {
+      setPlaylist(newPlaylist);
     });
 
     socketRef.current.on('user-joined', ({ userId }) => {
@@ -66,8 +71,22 @@ const RoomPage = () => {
   const handleUrlChange = (e) => {
     e.preventDefault();
     if (inputUrl.trim()) {
-      socketRef.current.emit('video-load', { roomId, url: inputUrl });
+      if (!videoUrl) {
+        socketRef.current.emit('video-load', { roomId, url: inputUrl });
+      } else {
+        const newPlaylist = [...playlist, inputUrl];
+        socketRef.current.emit('update-playlist', { roomId, playlist: newPlaylist });
+      }
       setInputUrl('');
+    }
+  };
+
+  const handleVideoEnd = () => {
+    if (playlist.length > 0) {
+      const nextUrl = playlist[0];
+      const newPlaylist = playlist.slice(1);
+      socketRef.current.emit('video-load', { roomId, url: nextUrl });
+      socketRef.current.emit('update-playlist', { roomId, playlist: newPlaylist });
     }
   };
 
@@ -147,6 +166,7 @@ const RoomPage = () => {
                 onPlay={handlePlay}
                 onPause={handlePause}
                 onSeek={handleSeek}
+                onEnded={handleVideoEnd}
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
@@ -165,8 +185,30 @@ const RoomPage = () => {
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
               />
-              <button className="btn-primary py-2 px-8">Load Video</button>
+              <button className="btn-primary py-2 px-8">Queue Video</button>
             </form>
+          </div>
+
+          {/* Playlist Section */}
+          <div className="mt-8">
+            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Play size={20} className="text-primary" />
+              Up Next ({playlist.length})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {playlist.length > 0 ? playlist.map((url, idx) => (
+                <div key={idx} className="glass-card p-4 flex items-center gap-4 bg-white/5 border-white/5 group">
+                  <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-white/40 font-bold group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-sm truncate text-white/70">{url}</p>
+                  </div>
+                </div>
+              )) : (
+                <p className="text-white/30 text-sm">No videos in queue.</p>
+              )}
+            </div>
           </div>
 
           {/* Members & Controls Bar */}
