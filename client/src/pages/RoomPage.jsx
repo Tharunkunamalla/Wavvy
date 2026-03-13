@@ -165,7 +165,7 @@ const RoomPage = () => {
 
   const sendMessage = (e) => {
     if (e) e.preventDefault();
-    handleInteraction();
+    if (!hasInteracted) handleInteraction();
     if (message.trim()) {
       socketRef.current.emit('send-message', { roomId, message: message.trim(), sender: user.name });
       setMessage('');
@@ -249,7 +249,7 @@ const RoomPage = () => {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Main Content: Video and Video Tools */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 bg-black">
+        <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-black custom-scrollbar">
            {/* Section 1: Video Player Area */}
            <div className="w-full aspect-video bg-zinc-900 rounded-lg overflow-hidden relative shadow-2xl border border-white/5">
               {videoUrl ? (
@@ -522,8 +522,8 @@ const RoomPage = () => {
                  <div className="p-4 grid grid-cols-2 gap-2 border-t border-white/5 bg-black/40">
                     <button onClick={grantAll} className="py-2.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Grant All</button>
                     <button onClick={revokeAll} className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Revoke All</button>
-                    <button className="col-span-2 py-4 bg-[#00e676] hover:bg-[#00c853] text-black rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all mt-2 active:scale-95 shadow-lg shadow-green-500/20">
-                       <Video size={16} /> Start Video Call
+                    <button className="col-span-2 py-4 bg-primary hover:bg-primary/90 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all mt-2 active:scale-95 shadow-lg shadow-primary/30">
+                       <Video size={18} /> Start Video Call
                     </button>
                  </div>
               )}

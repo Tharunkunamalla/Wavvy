@@ -27,7 +27,7 @@ const roomSchema = new mongoose.Schema({
     default: false
   },
   playlist: {
-    type: [String],
+    type: [mongoose.Schema.Types.Mixed],
     default: []
   },
   members: [{
