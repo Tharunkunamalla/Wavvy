@@ -157,7 +157,11 @@ io.on('connection', (socket) => {
       const room = await Room.findOne({ roomId });
       if (room) {
         const cleaned = cleanUrl(url);
-        room.playlist.push(cleaned);
+        // Store both the URL and the person who added it
+        room.playlist.push({ 
+          url: cleaned, 
+          addedBy: socket.data.name || 'Anonymous' 
+        });
         await room.save();
         io.to(roomId).emit('sync-playlist', room.playlist);
       }
@@ -186,7 +190,10 @@ io.on('connection', (socket) => {
       if (socket.data.canControl) {
         const room = await Room.findOne({ roomId });
         if (room && room.playlist.length > 0) {
-          const nextUrl = room.playlist.shift(); 
+          const nextItem = room.playlist.shift(); 
+          // Handle both old String format and new Object format
+          const nextUrl = typeof nextItem === 'string' ? nextItem : nextItem.url;
+          
           room.videoUrl = nextUrl;
           room.currentTime = 0;
           room.isPlaying = true;

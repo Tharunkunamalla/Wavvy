@@ -389,7 +389,11 @@ const RoomPage = () => {
               {/* Queue List */}
               <div className="space-y-1 mb-6">
                  {playlist.length > 0 ? (
-                    playlist.map((url, i) => {
+                    playlist.map((item, i) => {
+                      // Handle both old string format and new object format
+                      const url = typeof item === 'string' ? item : item.url;
+                      const addedBy = typeof item === 'string' ? 'host' : item.addedBy;
+                      
                       const thumbnail = getYouTubeThumbnail(url);
                       return (
                         <div key={i} className="flex items-center gap-4 py-2 border-b border-white/5 last:border-0 group transition-colors hover:bg-white/[0.02] px-2 rounded">
@@ -403,10 +407,10 @@ const RoomPage = () => {
                               <div className="absolute bottom-0 right-0 bg-black/80 text-[#ff0000] text-[5px] px-[2px] rounded-sm font-black">YT</div>
                            </div>
                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-white/90 truncate">YouTube · {url.split('v=')[1]?.substring(0, 11)}...</p>
+                              <p className="text-xs font-bold text-white/90 truncate">YouTube · {url.includes('v=') ? url.split('v=')[1]?.substring(0, 11) : 'Video'}...</p>
                               <div className="flex items-center gap-1 mt-0.5">
                                 <Users size={8} className="text-white/30" />
-                                <p className="text-[9px] text-white/40">added by host</p>
+                                <p className="text-[9px] text-white/40">added by {addedBy === user.name ? 'you' : (addedBy || 'user')}</p>
                               </div>
                            </div>
                            {canControl && (
