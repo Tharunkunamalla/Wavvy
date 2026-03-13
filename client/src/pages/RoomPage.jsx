@@ -328,7 +328,7 @@ const RoomPage = () => {
                  <button 
                     type="submit"
                     disabled={!inputUrl.trim() || (!canControl && !isHost)}
-                    className="w-full py-4 bg-[#666666] hover:bg-[#777777] text-black font-bold rounded-lg transition-all text-sm tracking-wide disabled:opacity-30 disabled:hover:bg-[#666666]"
+                    className="w-full py-4 bg-primary hover:bg-primary/90 text-white font-black rounded-xl transition-all text-sm tracking-[0.1em] uppercase disabled:opacity-30 disabled:hover:bg-primary shadow-lg shadow-primary/20 active:scale-[0.98]"
                  >
                     Load Video
                  </button>
@@ -338,36 +338,32 @@ const RoomPage = () => {
            {/* Section 3: UP NEXT Card - Based on Image 3 */}
            <div className="bg-[#141414] rounded-xl border border-white/5 p-6 shadow-lg">
               <div className="flex items-center justify-between mb-6">
-                 <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                     <AlignLeft size={18} className="text-white/60" />
                     <h2 className="text-sm font-bold uppercase tracking-widest">UP NEXT</h2>
-                    {playlist.length > 0 && <span className="bg-white text-black px-2 py-0.5 rounded-full text-[10px] font-black">{playlist.length}</span>}
+                    {playlist.length > 0 && <span className="bg-primary text-white px-2 py-0.5 rounded-full text-[10px] font-black">{playlist.length}</span>}
                  </div>
                  <div className="flex items-center gap-4 text-white/30">
-                    {/* Fake action buttons for UI completeness (can be hooked up later) */}
-                    <Zap size={14} className="hover:text-amber-400 cursor-pointer transition-colors" title="Sync All" />
-                    <Music size={14} className="hover:text-blue-400 cursor-pointer transition-colors" title="Audio Only Mode" />
-                    
-                    {/* Working Clear Playlist Button */}
+                    <Zap size={14} className="hover:text-primary cursor-pointer transition-colors" title="Sync All" />
+                    <Music size={14} className="hover:text-primary cursor-pointer transition-colors" title="Audio Only Mode" />
                     <button 
                        onClick={() => canControl && socketRef.current.emit('set-playlist', { roomId, playlist: [] })} 
                        disabled={!canControl || playlist.length === 0}
-                       className="focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
+                       className="focus:outline-none disabled:opacity-20"
                        title="Clear Queue"
                     >
-                       <Trash2 size={14} className="hover:text-red-500 cursor-pointer transition-colors" />
+                       <Trash2 size={14} className="hover:text-red-500 transition-colors" />
                     </button>
-                    
-                    {/* Expand/Collapse UI placeholder */}
                     <Maximize2 size={14} className="hover:text-white cursor-pointer transition-colors" title="Expand Queue" />
                  </div>
               </div>
 
               {/* Now Playing indicator */}
-              <div className="flex items-center gap-2 mb-6 bg-[#002b11]/20 border border-green-500/20 p-2.5 rounded text-sm relative overflow-hidden">
-                 <div className="w-2 h-2 bg-[#00ff44] rounded-full animate-pulse shadow-[0_0_8px_#00ff44]"></div>
-                 <span className="text-[11px] font-black text-[#00ff44] uppercase tracking-wider ml-1">NOW PLAYING</span>
-                 <span className="text-[11px] text-white/80 truncate flex-1 ml-2">YouTube · {videoUrl ? videoUrl.split('v=')[1]?.substring(0, 11) + '...' : 'None'}</span>
+              {/* Now Playing indicator with Brand Glow */}
+              <div className="flex items-center gap-2 mb-6 bg-primary/5 border border-primary/20 p-2.5 rounded text-sm relative overflow-hidden">
+                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_#f97316]"></div>
+                 <span className="text-[11px] font-black text-primary uppercase tracking-wider ml-1">NOW PLAYING</span>
+                 <span className="text-[11px] text-white/80 truncate flex-1 ml-2 font-medium">YouTube · {videoUrl ? videoUrl.split('v=')[1]?.substring(0, 11) + '...' : 'None'}</span>
               </div>
 
               {/* Add to Queue input */}
@@ -385,8 +381,8 @@ const RoomPage = () => {
                        }
                     }}
                  />
-                 <button onClick={addToPlaylist} className="p-2.5 bg-[#2a2a2a] hover:bg-[#333] rounded-md transition-colors border border-white/5">
-                    <Plus size={14} className="text-white/60" />
+                 <button onClick={addToPlaylist} className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-md transition-colors border border-primary/20">
+                    <Plus size={14} className="text-primary font-bold" />
                  </button>
               </div>
 
@@ -433,9 +429,9 @@ const RoomPage = () => {
               <button 
                  onClick={skipToNext}
                  disabled={playlist.length === 0 || !canControl}
-                 className="w-full py-3 bg-[#ffffff]/5 hover:bg-[#ffffff]/10 border border-white/10 rounded-lg text-white/80 text-xs font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-20"
+                 className="w-full py-4 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-xl text-primary text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all disabled:opacity-20 active:scale-95"
               >
-                 <SkipForward size={14} /> Skip to Next
+                 <SkipForward size={16} /> Skip to Next
               </button>
            </div>
         </main>
@@ -523,11 +519,11 @@ const RoomPage = () => {
                  ))}
               </div>
               {isHost && (
-                 <div className="p-4 grid grid-cols-2 gap-2 border-t border-white/5 bg-black/20">
-                    <button onClick={grantAll} className="py-2.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">Grant All</button>
-                    <button onClick={revokeAll} className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all">Revoke All</button>
-                    <button className="col-span-2 py-3 bg-[#00e676] hover:bg-[#00c853] text-black rounded-lg text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all mt-2 active:scale-95 shadow-lg shadow-green-500/10">
-                       <Video size={14} /> Start Video Call
+                 <div className="p-4 grid grid-cols-2 gap-2 border-t border-white/5 bg-black/40">
+                    <button onClick={grantAll} className="py-2.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Grant All</button>
+                    <button onClick={revokeAll} className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Revoke All</button>
+                    <button className="col-span-2 py-4 bg-[#00e676] hover:bg-[#00c853] text-black rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all mt-2 active:scale-95 shadow-lg shadow-green-500/20">
+                       <Video size={16} /> Start Video Call
                     </button>
                  </div>
               )}
