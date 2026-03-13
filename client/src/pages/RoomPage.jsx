@@ -89,13 +89,7 @@ const RoomPage = () => {
     };
   }, [roomId]); 
 
-  useEffect(() => {
-    console.log("Current Video URL Status:", videoUrl);
-    if (videoUrl) {
-      console.log("ReactPlayer canPlay(videoUrl):", ReactPlayer.canPlay(videoUrl));
-    }
-  }, [videoUrl]);
-
+  // Messages scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -103,57 +97,42 @@ const RoomPage = () => {
   }, [messages]);
 
   const handleInteraction = () => {
-    console.log("User Interaction Detected");
+    console.log("Interaction Overlay Clicked");
     setHasInteracted(true);
-    if (videoUrl) {
-      setIsPlaying(true);
-      setTimeout(() => {
-        setIsPlaying(true);
-      }, 500);
+    setIsPlaying(true);
+    
+    // Immediately seek to the correct time if we were already synced
+    const player = playerRef.current;
+    if (player && typeof player.seekTo === 'function') {
+        // The sync event might have already happened, but we were paused.
+        // We'll trust the current state to resume properly.
     }
   };
 
   const cleanUrl = (url) => {
     if (!url) return '';
     const trimmedUrl = url.trim();
-
-    // youtube.com links (including watch, embed, shorts)
-    if (trimmedUrl.includes('youtube.com') || trimmedUrl.includes('youtu.be')) {
-      let videoId = '';
-      
-      if (trimmedUrl.includes('youtu.be/')) {
-        const parts = trimmedUrl.split('youtu.be/');
-        if (parts[1]) videoId = parts[1].split(/[?#]/)[0];
-      } else if (trimmedUrl.includes('v=')) {
-        videoId = trimmedUrl.split('v=')[1].split('&')[0];
-      } else if (trimmedUrl.includes('embed/')) {
-        videoId = trimmedUrl.split('embed/')[1].split(/[?#]/)[0];
-      } else if (trimmedUrl.includes('/shorts/')) {
-        videoId = trimmedUrl.split('/shorts/')[1].split(/[?#]/)[0];
-      }
-
-      if (videoId) {
-        return `https://www.youtube.com/watch?v=${videoId}`;
-      }
+    // Use a more robust regex to extract the ID
+    const match = trimmedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/);
+    if (match && match[1]) {
+      return `https://www.youtube.com/watch?v=${match[1]}`;
     }
-
     return trimmedUrl;
   };
 
   const handleLoadVideo = (e) => {
     if (e) e.preventDefault();
-    console.log("handleLoadVideo triggered with URL:", inputUrl);
-    
-    if (!hasInteracted) handleInteraction();
-    
     if (inputUrl.trim()) {
       const cleaned = cleanUrl(inputUrl.trim());
-      console.log("Emitting video-load with cleaned URL:", cleaned);
+      console.log("Emitting video-load:", cleaned);
+      
+      // Optimistic update for the person loading
+      setVideoUrl(cleaned);
+      setIsPlaying(true);
+      setHasInteracted(true);
+      
       socketRef.current.emit('video-load', { roomId, url: cleaned });
       setInputUrl('');
-      setIsPlaying(true);
-    } else {
-      console.warn("handleLoadVideo called but inputUrl is empty");
     }
   };
 
@@ -227,7 +206,8 @@ const RoomPage = () => {
     setIsPlaying(false);
   };
 
-  const me = members.find(m => m.email?.toLowerCase() === user?.email?.toLowerCase());
+  const me = members.find(m => m.id === socketRef.current?.id) || 
+             members.find(m => m.email?.toLowerCase() === user?.email?.toLowerCase());
   const isHost = me?.isHost;
   const canControl = me?.canControl;
 
@@ -263,18 +243,17 @@ const RoomPage = () => {
               {videoUrl ? (
                 <>
                 <ReactPlayer
+                  key={videoUrl}
                   ref={playerRef}
                   url={videoUrl}
                   width="100%"
                   height="100%"
                   playing={isPlaying}
                   controls={true}
+                  muted={!hasInteracted}
                   onPlay={onPlay}
                   onPause={onPause}
                   onReady={() => console.log("ReactPlayer: Ready")}
-                  onStart={() => console.log("ReactPlayer: Started Playing")}
-                  onBuffer={() => console.log("ReactPlayer: Buffering...")}
-                  onBufferEnd={() => console.log("ReactPlayer: Buffer Ended")}
                   onError={(e) => console.error("ReactPlayer Error:", e)}
                   config={{
                     youtube: {
@@ -282,17 +261,18 @@ const RoomPage = () => {
                         autoplay: 1,
                         modestbranding: 1,
                         rel: 0,
-                        origin: window.location.origin
+                        playsinline: 1
                       }
                     }
                   }}
                 />
                   {!hasInteracted && videoUrl && (
-                    <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-20">
-                       <button onClick={handleInteraction} className="bg-primary text-black font-black px-10 py-5 rounded-lg flex items-center gap-3 hover:scale-105 transition-all shadow-xl active:scale-95">
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 backdrop-blur-sm">
+                       <button onClick={handleInteraction} className="bg-primary text-black font-black px-10 py-5 rounded-lg flex items-center gap-3 hover:scale-110 transition-all shadow-2xl active:scale-95 ring-4 ring-primary/20">
                           <Play fill="black" size={24} />
-                          <span className="text-lg uppercase tracking-widest">Click to start sync</span>
+                          <span className="text-lg uppercase tracking-widest font-black">Click to start sync</span>
                        </button>
+                       <p className="text-[10px] text-white/40 mt-6 uppercase tracking-[0.3em] font-bold">Unlocks Audio & Synchronizes Video</p>
                     </div>
                   )}
                 </>

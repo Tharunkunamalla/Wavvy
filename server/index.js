@@ -24,27 +24,10 @@ const io = new Server(server, {
 const cleanUrl = (url) => {
   if (!url) return '';
   const trimmedUrl = url.trim();
-
-  // youtube.com links (including watch, embed, shorts)
-  if (trimmedUrl.includes('youtube.com') || trimmedUrl.includes('youtu.be')) {
-    let videoId = '';
-    
-    if (trimmedUrl.includes('youtu.be/')) {
-      const parts = trimmedUrl.split('youtu.be/');
-      if (parts[1]) videoId = parts[1].split(/[?#]/)[0];
-    } else if (trimmedUrl.includes('v=')) {
-      videoId = trimmedUrl.split('v=')[1].split('&')[0];
-    } else if (trimmedUrl.includes('embed/')) {
-      videoId = trimmedUrl.split('embed/')[1].split(/[?#]/)[0];
-    } else if (trimmedUrl.includes('/shorts/')) {
-      videoId = trimmedUrl.split('/shorts/')[1].split(/[?#]/)[0];
-    }
-
-    if (videoId) {
-      return `https://www.youtube.com/watch?v=${videoId}`;
-    }
+  const match = trimmedUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/);
+  if (match && match[1]) {
+    return `https://www.youtube.com/watch?v=${match[1]}`;
   }
-
   return trimmedUrl;
 };
 
