@@ -23,10 +23,29 @@ const io = new Server(server, {
 // Helper to clean YouTube URLs
 const cleanUrl = (url) => {
   if (!url) return '';
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    return url.split('&')[0];
+  const trimmedUrl = url.trim();
+
+  // youtube.com links (including watch, embed, shorts)
+  if (trimmedUrl.includes('youtube.com') || trimmedUrl.includes('youtu.be')) {
+    let videoId = '';
+    
+    if (trimmedUrl.includes('youtu.be/')) {
+      const parts = trimmedUrl.split('youtu.be/');
+      if (parts[1]) videoId = parts[1].split(/[?#]/)[0];
+    } else if (trimmedUrl.includes('v=')) {
+      videoId = trimmedUrl.split('v=')[1].split('&')[0];
+    } else if (trimmedUrl.includes('embed/')) {
+      videoId = trimmedUrl.split('embed/')[1].split(/[?#]/)[0];
+    } else if (trimmedUrl.includes('/shorts/')) {
+      videoId = trimmedUrl.split('/shorts/')[1].split(/[?#]/)[0];
+    }
+
+    if (videoId) {
+      return `https://www.youtube.com/watch?v=${videoId}`;
+    }
   }
-  return url;
+
+  return trimmedUrl;
 };
 
 // Helper to get all members in a room with their socket data
@@ -89,7 +108,8 @@ io.on('connection', (socket) => {
       }
 
       // Emit initial state
-      socket.emit('sync-video-load', { url: room.videoUrl });
+      const initialUrl = cleanUrl(room.videoUrl);
+      socket.emit('sync-video-load', { url: initialUrl });
       socket.emit('sync-video', { 
         state: room.isPlaying ? 'playing' : 'paused', 
         time: room.currentTime 
@@ -123,6 +143,9 @@ io.on('connection', (socket) => {
       if (socket.data.canControl) {
         const cleaned = cleanUrl(url);
         io.to(roomId).emit('sync-video-load', { url: cleaned });
+        // Force everyone to start playing together
+        io.to(roomId).emit('sync-video', { state: 'playing', time: 0 });
+
         await Room.findOneAndUpdate({ roomId }, { 
           videoUrl: cleaned, 
           currentTime: 0,
@@ -177,13 +200,14 @@ io.on('connection', (socket) => {
       if (socket.data.canControl) {
         const room = await Room.findOne({ roomId });
         if (room && room.playlist.length > 0) {
-          const nextUrl = room.playlist.shift(); // Remove first item
+          const nextUrl = room.playlist.shift(); 
           room.videoUrl = nextUrl;
           room.currentTime = 0;
           room.isPlaying = true;
           await room.save();
           
           io.to(roomId).emit('sync-video-load', { url: nextUrl });
+          io.to(roomId).emit('sync-video', { state: 'playing', time: 0 });
           io.to(roomId).emit('sync-playlist', room.playlist);
         }
       }
@@ -238,7 +262,6 @@ io.on('connection', (socket) => {
     const rooms = Array.from(socket.rooms);
     for (const roomId of rooms) {
       if (roomId !== socket.id) {
-        // Increased delay to 200ms to allow adapter to update correctly
         setTimeout(async () => {
           const members = await getRoomMembers(roomId);
           io.to(roomId).emit('update-members', members);

@@ -97,21 +97,52 @@ const RoomPage = () => {
 
   const handleInteraction = () => {
     setHasInteracted(true);
-    if (videoUrl) setIsPlaying(true);
+    if (videoUrl) {
+      setIsPlaying(true);
+      // Brief timeout to ensure the player is ready after state change
+      setTimeout(() => {
+        setIsPlaying(true);
+      }, 500);
+    }
   };
 
   const cleanUrl = (url) => {
     if (!url) return '';
-    return url.split('&')[0];
+    const trimmedUrl = url.trim();
+
+    // youtube.com links (including watch, embed, shorts)
+    if (trimmedUrl.includes('youtube.com') || trimmedUrl.includes('youtu.be')) {
+      let videoId = '';
+      
+      if (trimmedUrl.includes('youtu.be/')) {
+        const parts = trimmedUrl.split('youtu.be/');
+        if (parts[1]) videoId = parts[1].split(/[?#]/)[0];
+      } else if (trimmedUrl.includes('v=')) {
+        videoId = trimmedUrl.split('v=')[1].split('&')[0];
+      } else if (trimmedUrl.includes('embed/')) {
+        videoId = trimmedUrl.split('embed/')[1].split(/[?#]/)[0];
+      } else if (trimmedUrl.includes('/shorts/')) {
+        videoId = trimmedUrl.split('/shorts/')[1].split(/[?#]/)[0];
+      }
+
+      if (videoId) {
+        return `https://www.youtube.com/watch?v=${videoId}`;
+      }
+    }
+
+    return trimmedUrl;
   };
 
   const handleLoadVideo = (e) => {
     if (e) e.preventDefault();
-    handleInteraction();
+    if (!hasInteracted) handleInteraction();
+    
     if (inputUrl.trim()) {
       const cleaned = cleanUrl(inputUrl.trim());
       socketRef.current.emit('video-load', { roomId, url: cleaned });
       setInputUrl('');
+      // Optimistically allow playing
+      setIsPlaying(true);
     }
   };
 
@@ -210,19 +241,28 @@ const RoomPage = () => {
            <div className="w-full aspect-video bg-zinc-900 rounded-lg overflow-hidden relative shadow-2xl border border-white/5">
               {videoUrl ? (
                 <>
-                  <ReactPlayer 
-                    ref={playerRef} 
-                    url={videoUrl} 
-                    width="100%" 
-                    height="100%" 
-                    playing={isPlaying} 
-                    controls={true} 
-                    onPlay={onPlay} 
-                    onPause={onPause}
-                    playsinline={true}
-                    config={{ youtube: { playerVars: { autoplay: 1, origin: window.location.origin } } }}
-                  />
-                  {!hasInteracted && (
+                <ReactPlayer
+                  ref={playerRef}
+                  url={videoUrl}
+                  width="100%"
+                  height="100%"
+                  playing={isPlaying}
+                  controls
+                  onPlay={onPlay}
+                  onPause={onPause}
+                  onError={(e) => console.error("ReactPlayer Error:", e)}
+                  config={{
+                    youtube: {
+                      playerVars: { 
+                        showinfo: 0, 
+                        rel: 0,
+                        autoplay: 1,
+                        modestbranding: 1
+                      }
+                    }
+                  }}
+                />
+                  {!hasInteracted && videoUrl && (
                     <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-20">
                        <button onClick={handleInteraction} className="bg-primary text-black font-black px-10 py-5 rounded-lg flex items-center gap-3 hover:scale-105 transition-all shadow-xl active:scale-95">
                           <Play fill="black" size={24} />
