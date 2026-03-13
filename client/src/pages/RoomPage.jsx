@@ -6,7 +6,7 @@ import {
   Send, Users, Video, Link as LinkIcon, LogOut, Play, Plus, 
   Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, 
   XCircle, Trash2, Copy, Check, Info, ChevronRight, SkipForward,
-  Settings2, MessageSquare, History
+  Settings2, MessageSquare, History, AlignLeft, Zap, Music, Maximize2
 } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
@@ -23,6 +23,8 @@ const RoomPage = () => {
   
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
+  const [showInfo, setShowInfo] = useState(false);
+
   const [videoUrl, setVideoUrl] = useState('');
   const [inputUrl, setInputUrl] = useState('');
   const [queueInput, setQueueInput] = useState('');
@@ -118,6 +120,16 @@ const RoomPage = () => {
       return `https://www.youtube.com/watch?v=${match[1]}`;
     }
     return trimmedUrl;
+  };
+
+  const getYouTubeThumbnail = (url) => {
+    try {
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const videoId = url.split('v=')[1]?.split('&')[0] || url.split('youtu.be/')[1]?.split(/[?#]/)[0];
+        if (videoId) return `https://img.youtube.com/vi/${videoId}/default.jpg`;
+      }
+    } catch(e) {}
+    return null;
   };
 
   const handleLoadVideo = (e) => {
@@ -288,94 +300,131 @@ const RoomPage = () => {
            <div className="bg-[#141414] rounded-xl border border-white/5 p-8 shadow-lg">
               <div className="flex items-center justify-between mb-6">
                  <h2 className="text-xl font-bold">Load Video</h2>
-                 <Info size={18} className="text-white/20" />
+                 <button onClick={() => setShowInfo(!showInfo)} className="focus:outline-none">
+                    <Info size={18} className={`cursor-pointer transition-colors ${showInfo ? 'text-white' : 'text-white/20 hover:text-white/60'}`} />
+                 </button>
               </div>
+              
+              {showInfo && (
+                 <div className="bg-[#161d2a] border border-[#2d3748] rounded-lg p-5 mb-6 text-sm animate-in fade-in slide-in-from-top-2">
+                    <p className="text-blue-400 font-bold mb-3">Supported (auto-detected):</p>
+                    <ul className="space-y-2 text-white/80">
+                       <li><span className="font-bold text-white">YouTube:</span> youtube.com or youtu.be links</li>
+                       <li><span className="font-bold text-white">Dropbox:</span> Share links (auto-converted)</li>
+                       <li><span className="font-bold text-white">Direct:</span> Any .mp4, .webm, .ogg URL</li>
+                    </ul>
+                    <p className="text-red-400 font-bold mt-4">Not supported: <span className="text-white/60 font-normal">Google Drive</span></p>
+                 </div>
+              )}
+
               <form onSubmit={handleLoadVideo} className="space-y-4">
                  <input 
                     type="text" 
                     placeholder="Paste YouTube, Dropbox, or direct .mp4 URL..." 
-                    className="w-full bg-[#1e1e1e] border border-white/10 rounded-lg py-4 px-6 text-sm font-medium focus:outline-none focus:border-white/20 transition-all text-white/80"
-                    value={inputUrl}
+                    className="w-full bg-[#333333]/50 border border-white/10 rounded-lg py-4 px-5 text-sm focus:outline-none focus:border-white/30 shadow-inner transition-all text-white/80 placeholder:text-white/30" 
+                    value={inputUrl} 
                     onChange={(e) => setInputUrl(e.target.value)}
                  />
                  <button 
                     type="submit"
                     disabled={!inputUrl.trim() || (!canControl && !isHost)}
-                    className="w-full py-4 bg-[#2a2a2a] hover:bg-[#333333] text-white/80 font-bold rounded-lg transition-all text-sm tracking-wide disabled:opacity-30"
+                    className="w-full py-4 bg-[#666666] hover:bg-[#777777] text-black font-bold rounded-lg transition-all text-sm tracking-wide disabled:opacity-30 disabled:hover:bg-[#666666]"
                  >
                     Load Video
                  </button>
               </form>
-              <div className="mt-6 space-y-2">
-                 <p className="text-[10px] text-white/30 flex items-center gap-2"><Check size={12} className="text-green-500/50" /> https://youtube.com/watch?v=... or youtu.be/...</p>
-                 <p className="text-[10px] text-white/30 flex items-center gap-2"><Check size={12} className="text-green-500/50" /> https://www.dropbox.com/s/.../video.mp4</p>
-                 <p className="text-[10px] text-white/30 flex items-center gap-2"><Check size={12} className="text-green-500/50" /> https://example.com/video.mp4</p>
-              </div>
            </div>
 
            {/* Section 3: UP NEXT Card - Based on Image 3 */}
-           <div className="bg-[#141414] rounded-xl border border-white/5 p-8 shadow-lg">
+           <div className="bg-[#141414] rounded-xl border border-white/5 p-6 shadow-lg">
               <div className="flex items-center justify-between mb-6">
                  <div className="flex items-center gap-3">
-                    <History size={18} className="text-white/40" />
-                    <h2 className="text-xl font-bold uppercase tracking-widest text-sm">UP NEXT</h2>
-                    {playlist.length > 0 && <span className="bg-white/10 px-2 py-0.5 rounded-full text-[10px] font-bold">{playlist.length}</span>}
+                    <AlignLeft size={18} className="text-white/60" />
+                    <h2 className="text-sm font-bold uppercase tracking-widest">UP NEXT</h2>
+                    {playlist.length > 0 && <span className="bg-white text-black px-2 py-0.5 rounded-full text-[10px] font-black">{playlist.length}</span>}
                  </div>
-                 <div className="flex items-center gap-3 text-white/20">
-                    <Monitor size={14} />
-                    <Clock size={14} />
-                    <History size={14} />
-                    <Trash2 size={14} className="hover:text-red-500 cursor-pointer" onClick={() => canControl && socketRef.current.emit('set-playlist', { roomId, playlist: [] })} />
-                    <ChevronRight size={14} />
+                 <div className="flex items-center gap-4 text-white/30">
+                    {/* Fake action buttons for UI completeness (can be hooked up later) */}
+                    <Zap size={14} className="hover:text-amber-400 cursor-pointer transition-colors" title="Sync All" />
+                    <Music size={14} className="hover:text-blue-400 cursor-pointer transition-colors" title="Audio Only Mode" />
+                    
+                    {/* Working Clear Playlist Button */}
+                    <button 
+                       onClick={() => canControl && socketRef.current.emit('set-playlist', { roomId, playlist: [] })} 
+                       disabled={!canControl || playlist.length === 0}
+                       className="focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed"
+                       title="Clear Queue"
+                    >
+                       <Trash2 size={14} className="hover:text-red-500 cursor-pointer transition-colors" />
+                    </button>
+                    
+                    {/* Expand/Collapse UI placeholder */}
+                    <Maximize2 size={14} className="hover:text-white cursor-pointer transition-colors" title="Expand Queue" />
                  </div>
               </div>
 
               {/* Now Playing indicator */}
-              <div className="flex items-center gap-3 mb-6 bg-green-500/5 border border-green-500/10 p-3 rounded-lg">
-                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                 <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">NOW PLAYING</span>
-                 <span className="text-[10px] text-white/40 truncate">{videoUrl || 'None'}</span>
+              <div className="flex items-center gap-2 mb-6 bg-[#002b11]/20 border border-green-500/20 p-2.5 rounded text-sm relative overflow-hidden">
+                 <div className="w-2 h-2 bg-[#00ff44] rounded-full animate-pulse shadow-[0_0_8px_#00ff44]"></div>
+                 <span className="text-[11px] font-black text-[#00ff44] uppercase tracking-wider ml-1">NOW PLAYING</span>
+                 <span className="text-[11px] text-white/80 truncate flex-1 ml-2">YouTube · {videoUrl ? videoUrl.split('v=')[1]?.substring(0, 11) + '...' : 'None'}</span>
               </div>
 
               {/* Add to Queue input */}
-              <div className="relative mb-6">
+              <div className="w-full bg-[#1e1e1e] border border-white/10 rounded-lg py-1 px-1 pl-4 flex items-center mb-6">
                  <input 
                     type="text" 
                     placeholder="YouTube or direct video URL..." 
-                    className="w-full bg-[#1e1e1e] border border-white/10 rounded-lg py-3 px-5 pr-12 text-sm focus:outline-none focus:border-white/20 transition-all text-white/60"
+                    className="flex-1 bg-transparent text-sm focus:outline-none text-white/60 placeholder:text-white/30"
                     value={queueInput}
                     onChange={(e) => setQueueInput(e.target.value)}
+                    onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addToPlaylist();
+                       }
+                    }}
                  />
-                 <button onClick={addToPlaylist} className="absolute right-2 top-1.5 w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-md transition-all">
-                    <Plus size={16} />
+                 <button onClick={addToPlaylist} className="p-2.5 bg-[#2a2a2a] hover:bg-[#333] rounded-md transition-colors border border-white/5">
+                    <Plus size={14} className="text-white/60" />
                  </button>
               </div>
 
               {/* Queue List */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-1 mb-6">
                  {playlist.length > 0 ? (
-                    playlist.map((url, i) => (
-                      <div key={i} className="flex items-center gap-4 bg-[#1e1e1e]/50 p-3 rounded-lg border border-white/5 group">
-                         <span className="text-[10px] font-black text-white/10 w-4">#{i+1}</span>
-                         <div className="w-16 h-10 bg-[#2a2a2a] rounded flex items-center justify-center text-white/5 relative overflow-hidden">
-                            <Monitor size={14} />
-                            {/* In a real app, thumbnail would go here */}
-                         </div>
-                         <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-white/60 truncate">{url}</p>
-                            <p className="text-[9px] font-medium text-white/20 uppercase tracking-widest">YouTube • Added by host</p>
-                         </div>
-                         {canControl && (
-                           <button onClick={() => socketRef.current.emit('remove-from-playlist', { roomId, index: i })} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Trash2 size={14} className="text-white/20 hover:text-red-500" />
-                           </button>
-                         )}
-                      </div>
-                    ))
+                    playlist.map((url, i) => {
+                      const thumbnail = getYouTubeThumbnail(url);
+                      return (
+                        <div key={i} className="flex items-center gap-4 py-2 border-b border-white/5 last:border-0 group transition-colors hover:bg-white/[0.02] px-2 rounded">
+                           <span className="text-[11px] font-medium text-white/20 w-3">{i+1}</span>
+                           <div className="w-10 h-6 bg-[#141414] rounded overflow-hidden flex items-center justify-center text-white/5 relative border border-white/5 shadow-sm">
+                              {thumbnail ? (
+                                 <img src={thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                              ) : (
+                                 <Monitor size={10} />
+                              )}
+                              <div className="absolute bottom-0 right-0 bg-black/80 text-[#ff0000] text-[5px] px-[2px] rounded-sm font-black">YT</div>
+                           </div>
+                           <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-white/90 truncate">YouTube · {url.split('v=')[1]?.substring(0, 11)}...</p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Users size={8} className="text-white/30" />
+                                <p className="text-[9px] text-white/40">added by host</p>
+                              </div>
+                           </div>
+                           {canControl && (
+                             <button onClick={() => socketRef.current.emit('remove-from-playlist', { roomId, index: i })} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-white/10 rounded">
+                                <Trash2 size={12} className="text-white/40 hover:text-red-500" />
+                             </button>
+                           )}
+                        </div>
+                      )
+                    })
                  ) : (
-                    <div className="py-12 flex flex-col items-center justify-center opacity-10">
-                       <Monitor size={32} />
-                       <p className="text-[10px] font-black uppercase mt-3">Queue is empty</p>
+                    <div className="py-8 flex flex-col items-center justify-center opacity-10">
+                       <Monitor size={24} />
+                       <p className="text-[9px] font-black uppercase mt-2">Queue is empty</p>
                     </div>
                  )}
               </div>
@@ -384,7 +433,7 @@ const RoomPage = () => {
               <button 
                  onClick={skipToNext}
                  disabled={playlist.length === 0 || !canControl}
-                 className="w-full py-4 bg-[#1e1e1e] hover:bg-[#252525] border border-white/5 rounded-lg text-white/60 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all disabled:opacity-20"
+                 className="w-full py-3 bg-[#ffffff]/5 hover:bg-[#ffffff]/10 border border-white/10 rounded-lg text-white/80 text-xs font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-20"
               >
                  <SkipForward size={14} /> Skip to Next
               </button>
