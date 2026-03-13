@@ -63,6 +63,7 @@ io.on('connection', (socket) => {
     try {
       socket.join(roomId);
       socket.data.user = user;
+      socket.data.name = user.name; // Explicitly store name for easier access
       
       let room = await Room.findOne({ roomId });
       

@@ -199,6 +199,7 @@ const RoomPage = () => {
   };
 
   const onPlay = () => {
+    if (!hasInteracted) return;
     if (isSyncing.current || !playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
     socketRef.current.emit('video-state-change', { 
       roomId, 
@@ -209,6 +210,7 @@ const RoomPage = () => {
   };
 
   const onPause = () => {
+    if (!hasInteracted) return;
     if (isSyncing.current || !playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
     socketRef.current.emit('video-state-change', { 
       roomId, 
@@ -270,7 +272,7 @@ const RoomPage = () => {
                   config={{
                     youtube: {
                       playerVars: { 
-                        autoplay: 1,
+                        autoplay: 0,
                         modestbranding: 1,
                         rel: 0,
                         playsinline: 1
