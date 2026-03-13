@@ -90,16 +90,23 @@ const RoomPage = () => {
   }, [roomId]); 
 
   useEffect(() => {
+    console.log("Current Video URL Status:", videoUrl);
+    if (videoUrl) {
+      console.log("ReactPlayer canPlay(videoUrl):", ReactPlayer.canPlay(videoUrl));
+    }
+  }, [videoUrl]);
+
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
   const handleInteraction = () => {
+    console.log("User Interaction Detected");
     setHasInteracted(true);
     if (videoUrl) {
       setIsPlaying(true);
-      // Brief timeout to ensure the player is ready after state change
       setTimeout(() => {
         setIsPlaying(true);
       }, 500);
@@ -135,14 +142,18 @@ const RoomPage = () => {
 
   const handleLoadVideo = (e) => {
     if (e) e.preventDefault();
+    console.log("handleLoadVideo triggered with URL:", inputUrl);
+    
     if (!hasInteracted) handleInteraction();
     
     if (inputUrl.trim()) {
       const cleaned = cleanUrl(inputUrl.trim());
+      console.log("Emitting video-load with cleaned URL:", cleaned);
       socketRef.current.emit('video-load', { roomId, url: cleaned });
       setInputUrl('');
-      // Optimistically allow playing
       setIsPlaying(true);
+    } else {
+      console.warn("handleLoadVideo called but inputUrl is empty");
     }
   };
 
@@ -162,12 +173,22 @@ const RoomPage = () => {
   };
 
   const sendMessage = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     handleInteraction();
     if (message.trim()) {
       socketRef.current.emit('send-message', { roomId, message: message.trim(), sender: user.name });
       setMessage('');
     }
+  };
+
+  const handleKick = (targetId) => {
+    socketRef.current.emit('kick-user', { roomId, targetId });
+    setShowMemberMenu(null);
+  };
+
+  const togglePermission = (targetId, canControl) => {
+    socketRef.current.emit('toggle-permission', { roomId, targetId, canControl });
+    setShowMemberMenu(null);
   };
 
   const grantAll = () => {
@@ -247,17 +268,21 @@ const RoomPage = () => {
                   width="100%"
                   height="100%"
                   playing={isPlaying}
-                  controls
+                  controls={true}
                   onPlay={onPlay}
                   onPause={onPause}
+                  onReady={() => console.log("ReactPlayer: Ready")}
+                  onStart={() => console.log("ReactPlayer: Started Playing")}
+                  onBuffer={() => console.log("ReactPlayer: Buffering...")}
+                  onBufferEnd={() => console.log("ReactPlayer: Buffer Ended")}
                   onError={(e) => console.error("ReactPlayer Error:", e)}
                   config={{
                     youtube: {
                       playerVars: { 
-                        showinfo: 0, 
-                        rel: 0,
                         autoplay: 1,
-                        modestbranding: 1
+                        modestbranding: 1,
+                        rel: 0,
+                        origin: window.location.origin
                       }
                     }
                   }}
@@ -285,7 +310,7 @@ const RoomPage = () => {
                  <h2 className="text-xl font-bold">Load Video</h2>
                  <Info size={18} className="text-white/20" />
               </div>
-              <div className="space-y-4">
+              <form onSubmit={handleLoadVideo} className="space-y-4">
                  <input 
                     type="text" 
                     placeholder="Paste YouTube, Dropbox, or direct .mp4 URL..." 
@@ -294,13 +319,13 @@ const RoomPage = () => {
                     onChange={(e) => setInputUrl(e.target.value)}
                  />
                  <button 
-                    onClick={handleLoadVideo}
+                    type="submit"
                     disabled={!inputUrl.trim() || (!canControl && !isHost)}
                     className="w-full py-4 bg-[#2a2a2a] hover:bg-[#333333] text-white/80 font-bold rounded-lg transition-all text-sm tracking-wide disabled:opacity-30"
                  >
                     Load Video
                  </button>
-              </div>
+              </form>
               <div className="mt-6 space-y-2">
                  <p className="text-[10px] text-white/30 flex items-center gap-2"><Check size={12} className="text-green-500/50" /> https://youtube.com/watch?v=... or youtu.be/...</p>
                  <p className="text-[10px] text-white/30 flex items-center gap-2"><Check size={12} className="text-green-500/50" /> https://www.dropbox.com/s/.../video.mp4</p>

@@ -139,18 +139,21 @@ io.on('connection', (socket) => {
   });
 
   socket.on('video-load', async ({ roomId, url }) => {
+    console.log(`[Server] video-load from ${socket.id} in room ${roomId}: ${url}`);
     try {
       if (socket.data.canControl) {
         const cleaned = cleanUrl(url);
+        console.log(`[Server] Broadcasting cleaned URL: ${cleaned}`);
         io.to(roomId).emit('sync-video-load', { url: cleaned });
-        // Force everyone to start playing together
         io.to(roomId).emit('sync-video', { state: 'playing', time: 0 });
 
         await Room.findOneAndUpdate({ roomId }, { 
           videoUrl: cleaned, 
           currentTime: 0,
           isPlaying: true 
-        });
+        }, { new: true });
+      } else {
+        console.warn(`[Server] Permission denied for ${socket.id} to load video`);
       }
     } catch (err) {
       console.error('Video load error:', err);
@@ -231,18 +234,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('kick-user', async ({ roomId, targetId }) => {
-    try {
-      if (socket.data.isHost) {
-         io.to(targetId).emit('kicked');
-         const targetSocket = io.sockets.sockets.get(targetId);
-         if (targetSocket) targetSocket.leave(roomId);
-      }
-    } catch (err) {
-      console.error('Kick user error:', err);
-    }
-  });
-
   socket.on('toggle-permission', async ({ roomId, targetId, canControl }) => {
     try {
       if (socket.data.isHost) {
@@ -255,6 +246,22 @@ io.on('connection', (socket) => {
       }
     } catch (err) {
       console.error('Toggle permission error:', err);
+    }
+  });
+
+  socket.on('kick-user', async ({ roomId, targetId }) => {
+    try {
+      if (socket.data.isHost) {
+         io.to(targetId).emit('kicked');
+         const targetSocket = io.sockets.sockets.get(targetId);
+         if (targetSocket) {
+           targetSocket.leave(roomId);
+           const members = await getRoomMembers(roomId);
+           io.to(roomId).emit('update-members', members);
+         }
+      }
+    } catch (err) {
+      console.error('Kick user error:', err);
     }
   });
 
