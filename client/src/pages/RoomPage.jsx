@@ -253,6 +253,19 @@ const RoomPage = () => {
   const isHost = me?.isHost;
   const canControl = me?.canControl;
 
+  // Function to explicitly emit state (used by buttons)
+  const emitCurrentState = (targetState = null) => {
+    if (!canControl || !playerRef.current) return;
+    const finalState = targetState !== null ? targetState : (isPlaying ? 'playing' : 'paused');
+    const time = playerRef.current.getCurrentTime();
+    console.log(`[Sync] Force Emitting: ${finalState} at ${time}`);
+    socketRef.current.emit('video-state-change', { roomId, state: finalState, time });
+    if (targetState === 'playing') {
+      // Also re-broadcast URL just in case someone is on a blank screen
+      socketRef.current.emit('video-load', { roomId, url: videoUrl });
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
       {/* Navbar Section */}
@@ -375,29 +388,34 @@ const RoomPage = () => {
                     <h2 className="text-sm font-bold uppercase tracking-widest">UP NEXT</h2>
                     {playlist.length > 0 && <span className="bg-primary text-white px-2 py-0.5 rounded-full text-[10px] font-black">{playlist.length}</span>}
                  </div>
-                  <div className="flex items-center gap-4 text-white/30">
+                   <div className="flex items-center gap-4 text-white/30">
                     {/* Force Sync Button */}
-                    <RefreshCw 
-                       size={14} 
-                       className="hover:text-primary cursor-pointer transition-all active:rotate-180 duration-500" 
-                       title="Force Sync For All"
-                       onClick={() => {
-                          if (canControl && playerRef.current) {
-                             const time = playerRef.current.getCurrentTime();
-                             socketRef.current.emit('video-state-change', { roomId, state: isPlaying ? 'playing' : 'paused', time });
-                          }
-                       }}
-                    />
-
-                    {/* Auto Play Next Toggle - Modern Icon */}
                     <button 
-                       onClick={() => canControl && socketRef.current.emit('toggle-auto-play', { roomId, autoPlayNext: !autoPlayNext })}
+                       onClick={() => emitCurrentState()}
+                       className={`p-1 rounded hover:bg-white/5 transition-all active:scale-90 ${canControl ? 'opacity-100' : 'opacity-20 cursor-not-allowed'}`}
+                       title="Force Sync For All"
+                       disabled={!canControl}
+                    >
+                       <RefreshCw 
+                          size={14} 
+                          className="hover:text-primary transition-all active:rotate-180 duration-500" 
+                       />
+                    </button>
+
+                    {/* Auto Play Next Toggle */}
+                    <button 
+                       onClick={() => {
+                          if (!canControl) return;
+                          console.log("[AutoPlay] Toggling to:", !autoPlayNext);
+                          socketRef.current.emit('toggle-auto-play', { roomId, autoPlayNext: !autoPlayNext });
+                       }}
                        title={autoPlayNext ? "Auto Play Next: ON" : "Auto Play Next: OFF"}
-                       className="focus:outline-none"
+                       className={`p-1 rounded hover:bg-white/5 transition-all active:scale-90 ${canControl ? 'opacity-100' : 'opacity-20 cursor-not-allowed'}`}
+                       disabled={!canControl}
                     >
                        <Repeat 
                           size={14} 
-                          className={`${autoPlayNext ? 'text-primary' : 'hover:text-primary'} cursor-pointer transition-colors`} 
+                          className={`${autoPlayNext ? 'text-primary' : 'hover:text-primary'} transition-colors`} 
                        />
                     </button>
 
@@ -405,19 +423,20 @@ const RoomPage = () => {
                     <button 
                        onClick={() => canControl && socketRef.current.emit('set-playlist', { roomId, playlist: [] })} 
                        disabled={!canControl || playlist.length === 0}
-                       className="focus:outline-none disabled:opacity-20"
+                       className="p-1 rounded hover:bg-white/5 transition-all active:scale-90 disabled:opacity-20"
                        title="Clear Queue"
                     >
                        <Trash2 size={14} className="hover:text-red-500 transition-colors" />
                     </button>
 
                     {/* Expand/Collapse */}
-                    <Maximize2 
-                      size={14} 
-                      className={`${isQueueExpanded ? 'text-primary' : 'hover:text-white'} cursor-pointer transition-colors`} 
+                    <button 
+                      className="p-1 rounded hover:bg-white/5 transition-all active:scale-90"
                       onClick={() => setIsQueueExpanded(!isQueueExpanded)}
-                      title="Toggle Expand Queue" 
-                    />
+                      title="Toggle Expand Queue"
+                    >
+                       <Maximize2 size={14} className={`${isQueueExpanded ? 'text-primary' : 'hover:text-white'} transition-colors`} />
+                    </button>
                  </div>
               </div>
 
