@@ -26,6 +26,10 @@ const roomSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  autoPlayNext: {
+    type: Boolean,
+    default: true
+  },
   playlist: {
     type: [mongoose.Schema.Types.Mixed],
     default: []

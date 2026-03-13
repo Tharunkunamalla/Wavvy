@@ -99,6 +99,7 @@ io.on('connection', (socket) => {
         time: room.currentTime 
       });
       socket.emit('sync-playlist', room.playlist || []);
+      socket.emit('sync-auto-play', room.autoPlayNext);
       
       // Broadcast updated member list
       const members = await getRoomMembers(roomId);
@@ -237,6 +238,21 @@ io.on('connection', (socket) => {
       }
     } catch (err) {
       console.error('Toggle permission error:', err);
+    }
+  });
+
+  socket.on('toggle-auto-play', async ({ roomId, autoPlayNext }) => {
+    try {
+      if (socket.data.canControl) {
+        const room = await Room.findOne({ roomId });
+        if (room) {
+          room.autoPlayNext = autoPlayNext;
+          await room.save();
+          io.to(roomId).emit('sync-auto-play', autoPlayNext);
+        }
+      }
+    } catch (err) {
+      console.error('Toggle auto-play error:', err);
     }
   });
 

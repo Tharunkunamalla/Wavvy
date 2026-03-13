@@ -35,6 +35,8 @@ const RoomPage = () => {
   
   const user = JSON.parse(localStorage.getItem('user'));
   const [showMemberMenu, setShowMemberMenu] = useState(null);
+  const [isQueueExpanded, setIsQueueExpanded] = useState(false);
+  const [autoPlayNext, setAutoPlayNext] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -67,6 +69,10 @@ const RoomPage = () => {
 
     socketRef.current.on('sync-video-load', ({ url }) => {
       setVideoUrl(url);
+    });
+
+    socketRef.current.on('sync-auto-play', (val) => {
+      setAutoPlayNext(val);
     });
 
     socketRef.current.on('sync-video', ({ state, time }) => {
@@ -209,6 +215,21 @@ const RoomPage = () => {
     setIsPlaying(true);
   };
 
+  const onSeek = (seconds) => {
+    if (!hasInteracted || !canControl) return;
+    socketRef.current.emit('video-state-change', { 
+      roomId, 
+      state: isPlaying ? 'playing' : 'paused', 
+      time: seconds
+    });
+  };
+
+  const onEnded = () => {
+    if (autoPlayNext && canControl && playlist.length > 0) {
+      skipToNext();
+    }
+  };
+
   const onPause = () => {
     if (!hasInteracted) return;
     if (isSyncing.current || !playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
@@ -267,6 +288,8 @@ const RoomPage = () => {
                   muted={!hasInteracted}
                   onPlay={onPlay}
                   onPause={onPause}
+                  onSeek={onSeek}
+                  onEnded={onEnded}
                   onReady={() => console.log("ReactPlayer: Ready")}
                   onError={(e) => console.error("ReactPlayer Error:", e)}
                   config={{
@@ -345,8 +368,13 @@ const RoomPage = () => {
                     <h2 className="text-sm font-bold uppercase tracking-widest">UP NEXT</h2>
                     {playlist.length > 0 && <span className="bg-primary text-white px-2 py-0.5 rounded-full text-[10px] font-black">{playlist.length}</span>}
                  </div>
-                 <div className="flex items-center gap-4 text-white/30">
-                    <Zap size={14} className="hover:text-primary cursor-pointer transition-colors" title="Sync All" />
+                  <div className="flex items-center gap-4 text-white/30">
+                    <Zap 
+                      size={14} 
+                      className={`${autoPlayNext ? 'text-primary' : 'hover:text-primary'} cursor-pointer transition-colors`} 
+                      onClick={() => canControl && socketRef.current.emit('toggle-auto-play', { roomId, autoPlayNext: !autoPlayNext })}
+                      title={autoPlayNext ? "Auto Play: ON" : "Auto Play: OFF"} 
+                    />
                     <Music size={14} className="hover:text-primary cursor-pointer transition-colors" title="Audio Only Mode" />
                     <button 
                        onClick={() => canControl && socketRef.current.emit('set-playlist', { roomId, playlist: [] })} 
@@ -356,7 +384,12 @@ const RoomPage = () => {
                     >
                        <Trash2 size={14} className="hover:text-red-500 transition-colors" />
                     </button>
-                    <Maximize2 size={14} className="hover:text-white cursor-pointer transition-colors" title="Expand Queue" />
+                    <Maximize2 
+                      size={14} 
+                      className={`${isQueueExpanded ? 'text-primary' : 'hover:text-white'} cursor-pointer transition-colors`} 
+                      onClick={() => setIsQueueExpanded(!isQueueExpanded)}
+                      title="Toggle Expand Queue" 
+                    />
                  </div>
               </div>
 
@@ -389,7 +422,7 @@ const RoomPage = () => {
               </div>
 
               {/* Queue List */}
-              <div className="space-y-1 mb-6">
+              <div className={`space-y-1 mb-6 transition-all duration-500 ${isQueueExpanded ? 'max-h-[800px]' : 'max-h-[160px]'} overflow-y-auto custom-scrollbar px-1`}>
                  {playlist.length > 0 ? (
                     playlist.map((item, i) => {
                       // Handle both old string format and new object format
@@ -457,14 +490,27 @@ const RoomPage = () => {
                        <p className="text-xs font-black uppercase tracking-widest">No messages yet. Start the conversation!</p>
                     </div>
                  ) : (
-                    messages.map((msg, i) => (
-                       <div key={i} className={`flex flex-col ${msg.sender === user.name ? 'items-end' : 'items-start'}`}>
-                          <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm font-medium leading-relaxed ${msg.sender === user.name ? 'bg-zinc-800 text-white rounded-tr-none border border-white/5 shadow-md' : 'bg-primary text-black rounded-tl-none font-bold shadow-md'}`}>
-                             {msg.message}
-                          </div>
-                          <span className="text-[9px] font-black text-white/20 mt-1 uppercase tracking-widest">{msg.sender === user.name ? 'You' : msg.sender}</span>
-                       </div>
-                    ))
+                    messages.map((msg, i) => {
+                      const isMe = msg.sender === user.name;
+                      const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                      
+                      return (
+                        <div key={i} className={`flex flex-col mb-4 ${isMe ? 'items-end' : 'items-start'}`}>
+                           <div className="flex items-center gap-2 mb-1 px-1">
+                              {!isMe && <span className="text-[10px] font-black text-primary uppercase tracking-tighter">{msg.sender}</span>}
+                              <span className="text-[8px] font-medium text-white/20">{timeStr}</span>
+                              {isMe && <span className="text-[10px] font-black text-white/40 uppercase tracking-tighter">You</span>}
+                           </div>
+                           <div className={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] font-medium leading-relaxed transition-all hover:shadow-lg ${
+                              isMe 
+                              ? 'bg-zinc-800 text-white rounded-tr-none border border-white/5 shadow-md' 
+                              : 'bg-white/5 text-white/90 rounded-tl-none border border-white/10'
+                           }`}>
+                              {msg.message}
+                           </div>
+                        </div>
+                      )
+                    })
                  )}
               </div>
               <div className="p-4 bg-black/20">
