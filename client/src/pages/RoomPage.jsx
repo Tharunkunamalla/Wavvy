@@ -45,6 +45,14 @@ const RoomPage = () => {
       return;
     }
 
+    // Add this room to user's personal history if it's not already there
+    const historyKey = `myRooms_${user.email}`;
+    const savedRooms = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    if (!savedRooms.find(r => r.id === roomId)) {
+      const newEntry = { id: roomId, name: 'Visited Room', createdAt: new Date().toISOString() };
+      localStorage.setItem(historyKey, JSON.stringify([newEntry, ...savedRooms]));
+    }
+
     socketRef.current = io(SOCKET_URL);
     
     socketRef.current.on('connect', () => {

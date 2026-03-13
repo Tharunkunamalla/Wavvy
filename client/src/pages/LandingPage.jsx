@@ -11,9 +11,11 @@ const LandingPage = () => {
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
-    const savedRooms = JSON.parse(localStorage.getItem('myRooms') || '[]');
-    setMyRooms(savedRooms);
-  }, []);
+    if (user && user.email) {
+      const savedRooms = JSON.parse(localStorage.getItem(`myRooms_${user.email}`) || '[]');
+      setMyRooms(savedRooms);
+    }
+  }, [user?.email]);
 
   const handleCreateRoom = (e) => {
     e.preventDefault();
@@ -23,15 +25,22 @@ const LandingPage = () => {
     const newRoomId = Math.random().toString(36).substring(2, 9);
     const newRoom = { id: newRoomId, name: roomName.trim(), createdAt: new Date().toISOString() };
     const updatedRooms = [newRoom, ...myRooms];
-    localStorage.setItem('myRooms', JSON.stringify(updatedRooms));
+    localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updatedRooms));
     navigate(`/room/${newRoomId}`, { state: { roomName: roomName.trim() } });
   };
 
   const handleJoinRoom = (e) => {
     e.preventDefault();
     if (!user) return navigate('/login');
-    if (roomId.trim()) {
-      navigate(`/room/${roomId.trim()}`);
+    const tid = roomId.trim();
+    if (tid) {
+      // Add to recent if not already there
+      if (!myRooms.find(r => r.id === tid)) {
+        const newEntry = { id: tid, name: 'Joined Room', createdAt: new Date().toISOString() };
+        const updated = [newEntry, ...myRooms];
+        localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updated));
+      }
+      navigate(`/room/${tid}`);
     }
   };
 
