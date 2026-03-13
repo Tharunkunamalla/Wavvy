@@ -188,22 +188,26 @@ io.on('connection', (socket) => {
   });
 
   socket.on('skip-to-next', async ({ roomId }) => {
+    console.log(`[Server] skip-to-next by ${socket.id} in room ${roomId}`);
     try {
       if (socket.data.canControl) {
         const room = await Room.findOne({ roomId });
         if (room && room.playlist.length > 0) {
           const nextItem = room.playlist.shift(); 
-          // Handle both old String format and new Object format
           const nextUrl = typeof nextItem === 'string' ? nextItem : nextItem.url;
           
           room.videoUrl = nextUrl;
           room.currentTime = 0;
           room.isPlaying = true;
+          room.markModified('playlist'); // Critical for mixed arrays
           await room.save();
           
+          console.log(`[Server] Next video: ${nextUrl}`);
           io.to(roomId).emit('sync-video-load', { url: nextUrl });
           io.to(roomId).emit('sync-video', { state: 'playing', time: 0 });
           io.to(roomId).emit('sync-playlist', room.playlist);
+        } else {
+          console.log(`[Server] Playlist empty, cannot skip.`);
         }
       }
     } catch (err) {

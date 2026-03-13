@@ -6,7 +6,7 @@ import {
   Send, Users, Video, Link as LinkIcon, LogOut, Play, Plus, 
   Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, 
   XCircle, Trash2, Copy, Check, Info, ChevronRight, SkipForward,
-  Settings2, MessageSquare, History, AlignLeft, Zap, Music, Maximize2
+  Settings2, MessageSquare, History, AlignLeft, Maximize2, RefreshCw, Repeat
 } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
@@ -32,6 +32,7 @@ const RoomPage = () => {
   const [members, setMembers] = useState([]);
   const [playlist, setPlaylist] = useState([]);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [cachedRoomState, setCachedRoomState] = useState({ state: 'paused', time: 0 });
   
   const user = JSON.parse(localStorage.getItem('user'));
   const [showMemberMenu, setShowMemberMenu] = useState(null);
@@ -77,15 +78,20 @@ const RoomPage = () => {
 
     socketRef.current.on('sync-video', ({ state, time }) => {
       isSyncing.current = true;
-      if (hasInteracted) setIsPlaying(state === 'playing');
+      setCachedRoomState({ state, time });
+      
+      if (hasInteracted) {
+        setIsPlaying(state === 'playing');
+      }
       
       const player = playerRef.current;
       if (player && typeof player.getInternalPlayer === 'function') {
         const internalPlayer = player.getInternalPlayer();
         if (internalPlayer && typeof player.getCurrentTime === 'function') {
           const currentTime = player.getCurrentTime();
-          if (Math.abs(currentTime - (time || 0)) > 1.5) {
-            player.seekTo(time, 'seconds');
+          const targetTime = time || 0;
+          if (Math.abs(currentTime - targetTime) > 1.5) {
+            player.seekTo(targetTime, 'seconds');
           }
         }
       }
@@ -105,15 +111,16 @@ const RoomPage = () => {
   }, [messages]);
 
   const handleInteraction = () => {
-    console.log("Interaction Overlay Clicked");
+    console.log("Interaction Overlay Clicked - Restoring sync");
     setHasInteracted(true);
-    setIsPlaying(true);
     
-    // Immediately seek to the correct time if we were already synced
+    // Resume with whatever the current room state is
+    const targetIsPlaying = cachedRoomState.state === 'playing';
+    setIsPlaying(targetIsPlaying);
+    
     const player = playerRef.current;
     if (player && typeof player.seekTo === 'function') {
-        // The sync event might have already happened, but we were paused.
-        // We'll trust the current state to resume properly.
+        player.seekTo(cachedRoomState.time, 'seconds');
     }
   };
 
@@ -171,7 +178,7 @@ const RoomPage = () => {
 
   const sendMessage = (e) => {
     if (e) e.preventDefault();
-    if (!hasInteracted) handleInteraction();
+    // Removed handleInteraction call to prevent chat from starting video automatically
     if (message.trim()) {
       socketRef.current.emit('send-message', { roomId, message: message.trim(), sender: user.name });
       setMessage('');
@@ -369,13 +376,32 @@ const RoomPage = () => {
                     {playlist.length > 0 && <span className="bg-primary text-white px-2 py-0.5 rounded-full text-[10px] font-black">{playlist.length}</span>}
                  </div>
                   <div className="flex items-center gap-4 text-white/30">
-                    <Zap 
-                      size={14} 
-                      className={`${autoPlayNext ? 'text-primary' : 'hover:text-primary'} cursor-pointer transition-colors`} 
-                      onClick={() => canControl && socketRef.current.emit('toggle-auto-play', { roomId, autoPlayNext: !autoPlayNext })}
-                      title={autoPlayNext ? "Auto Play: ON" : "Auto Play: OFF"} 
+                    {/* Force Sync Button */}
+                    <RefreshCw 
+                       size={14} 
+                       className="hover:text-primary cursor-pointer transition-all active:rotate-180 duration-500" 
+                       title="Force Sync For All"
+                       onClick={() => {
+                          if (canControl && playerRef.current) {
+                             const time = playerRef.current.getCurrentTime();
+                             socketRef.current.emit('video-state-change', { roomId, state: isPlaying ? 'playing' : 'paused', time });
+                          }
+                       }}
                     />
-                    <Music size={14} className="hover:text-primary cursor-pointer transition-colors" title="Audio Only Mode" />
+
+                    {/* Auto Play Next Toggle - Modern Icon */}
+                    <button 
+                       onClick={() => canControl && socketRef.current.emit('toggle-auto-play', { roomId, autoPlayNext: !autoPlayNext })}
+                       title={autoPlayNext ? "Auto Play Next: ON" : "Auto Play Next: OFF"}
+                       className="focus:outline-none"
+                    >
+                       <Repeat 
+                          size={14} 
+                          className={`${autoPlayNext ? 'text-primary' : 'hover:text-primary'} cursor-pointer transition-colors`} 
+                       />
+                    </button>
+
+                    {/* Clear Playlist */}
                     <button 
                        onClick={() => canControl && socketRef.current.emit('set-playlist', { roomId, playlist: [] })} 
                        disabled={!canControl || playlist.length === 0}
@@ -384,6 +410,8 @@ const RoomPage = () => {
                     >
                        <Trash2 size={14} className="hover:text-red-500 transition-colors" />
                     </button>
+
+                    {/* Expand/Collapse */}
                     <Maximize2 
                       size={14} 
                       className={`${isQueueExpanded ? 'text-primary' : 'hover:text-white'} cursor-pointer transition-colors`} 
