@@ -146,7 +146,8 @@ const LandingPage = () => {
                     <input
                       type="text"
                       placeholder="Paste Room ID to join..."
-                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-5 pl-12 pr-4 focus:outline-none focus:border-orange-500/50 transition-all text-sm font-bold h-full"
+                     className="w-full bg-zinc-900 border border-orange-500 rounded-2xl py-5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm font-bold h-full"
+
                       value={roomId}
                       onChange={(e) => setRoomId(e.target.value)}
                     />
