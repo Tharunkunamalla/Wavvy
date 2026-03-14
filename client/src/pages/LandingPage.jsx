@@ -257,7 +257,7 @@ const LandingPage = () => {
               {/* Create Room Card */}
               <button
                 onClick={handleGetStarted}
-                className="bg-zinc-200 hover:bg-white text-black font-semibold min-h-[140px] rounded-[1.25rem] flex items-center justify-center gap-2 transition-colors text-lg"
+                className="bg-zinc-200 hover:bg-white text-black font-semibold min-h-[140px] rounded-[1.25rem] flex items-center justify-center gap-2 transition-colors text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
               >
                 <Plus size={20} />
                 Create New Room
