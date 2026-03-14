@@ -849,7 +849,7 @@ const RoomPage = () => {
                        )}
 
                        {showMemberMenu === m.id && (
-                          <div className="absolute right-10 bottom-0 w-44 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl z-[100] p-1 animate-in slide-in-from-right-2">
+                          <div className="absolute right-10 top-8 w-44 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl z-[100] p-1 animate-in slide-in-from-top-2">
                              <button onClick={() => togglePermission(m.id, !m.canControl)} className="w-full text-left px-3 py-2 rounded-md hover:bg-white/5 text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-white/60">
                                 {m.canControl ? <ShieldOff size={12} /> : <Shield size={12} />} {m.canControl ? "Revoke" : "Grant"}
                              </button>
