@@ -871,7 +871,7 @@ const RoomPage = () => {
                  <span className="ml-auto bg-white/5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white/40">{members.length}</span>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                 {members.map(m => (
+                 {[...members].sort((a, b) => (b.isHost ? 1 : 0) - (a.isHost ? 1 : 0) || (b.canControl ? 1 : 0) - (a.canControl ? 1 : 0) || a.name.localeCompare(b.name)).map(m => (
                     <div key={m.id} className="flex items-center gap-3 bg-[#1e1e1e]/30 p-2.5 rounded-lg border border-white/5 group relative">
                        <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
                           {m.name.charAt(0).toUpperCase()}
