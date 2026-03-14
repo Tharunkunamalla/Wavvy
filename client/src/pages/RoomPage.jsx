@@ -573,7 +573,7 @@ const RoomPage = () => {
                     <textarea 
                        rows={1}
                        placeholder="Type a message..." 
-                       className="flex-1 bg-[#1e1e1e] border border-white/5 rounded-lg py-3 px-4 pr-12 text-sm focus:outline-none focus:border-white/10 transition-all font-medium resize-none min-h-[46px] max-h-[120px]" 
+                       className="flex-1 bg-[#1e1e1e] border border-white/5 rounded-lg py-3 px-4 pr-12 text-sm focus:outline-none focus:border-orange-500 transition-all font-medium resize-none min-h-[46px] max-h-[120px]" 
                        value={message} 
                        onChange={(e) => setMessage(e.target.value)} 
                        onKeyDown={(e) => {
