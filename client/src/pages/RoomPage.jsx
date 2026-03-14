@@ -553,7 +553,7 @@ const RoomPage = () => {
                         <div key={i} className={`flex flex-col mb-4 ${isMe ? 'items-end' : 'items-start'}`}>
                            <div className="flex items-center gap-2 mb-1 px-1">
                               {!isMe && <span className="text-[10px] font-black text-primary uppercase tracking-tighter">{msg.sender}</span>}
-                              <span className="text-[8px] font-medium text-white/20">{timeStr}</span>
+                              <span className="text-[8px] font-medium text-orange-500">{timeStr}</span>
                               {isMe && <span className="text-[10px] font-black text-white/40 uppercase tracking-tighter">You</span>}
                            </div>
                            <div className={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] font-medium leading-relaxed transition-all hover:shadow-lg whitespace-pre-wrap ${
@@ -583,7 +583,7 @@ const RoomPage = () => {
                           }
                        }}
                     />
-                    <button type="submit" className="absolute right-3 text-white/20 hover:text-primary transition-colors">
+                    <button type="submit" className="absolute right-3 text-orange-500 hover:text-primary transition-colors text-orange-900">
                        <Send size={18} />
                     </button>
                  </form>
