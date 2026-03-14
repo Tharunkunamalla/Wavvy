@@ -297,9 +297,9 @@ io.on('connection', (socket) => {
   socket.on('request-mod', async ({ roomId, userName }) => {
     try {
       const room = await Room.findOne({ roomId });
-      if (room && room.host) {
+      if (room && room.hostId) {
         const socketsInRoom = await io.in(roomId).fetchSockets();
-        const hostSocket = socketsInRoom.find(s => s.data.userId === room.host || s.id === room.host);
+        const hostSocket = socketsInRoom.find(s => s.data.userId === room.hostId || s.id === room.hostId);
         if (hostSocket) {
           io.to(hostSocket.id).emit('mod-request', { userId: socket.id, userName });
         }
