@@ -94,9 +94,9 @@ const LandingPage = () => {
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       {/* Top Navigation */}
       <nav className="h-20 flex items-center justify-between px-12 z-50">
-        <div className="flex items-center gap-2">
-          <Play className="text-white fill-current" size={24} />
-          <span className="text-2xl font-black tracking-tighter italic">
+        <div className="flex items-center gap-2 cursor-pointer group">
+          <Play className="text-primary fill-current drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] group-hover:scale-110 transition-transform" size={28} />
+          <span className="text-3xl font-brand tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-300 drop-shadow-xl mt-1">
             Wavvy
           </span>
         </div>

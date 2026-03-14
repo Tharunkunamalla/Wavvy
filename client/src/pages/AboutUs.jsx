@@ -19,7 +19,7 @@ const About = () => {
         </nav>
 
         <section className="text-center max-w-4xl mx-auto mt-20 px-6">
-          <div className="border border-gray-300 px-5 py-2 rounded-full inline-flex justify-center items-center gap-2 mb-6">
+          <div className="border border-orange-500 px-5 py-2 rounded-full inline-flex justify-center items-center gap-2 mb-6 shadow-lg shadow-orange-500/20">
             <p className="text-orange-500 mb-0">Built with passion 🧡</p>
           </div>
           <h1 className="text-5xl font-bold leading-tight">

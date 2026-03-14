@@ -557,9 +557,9 @@ const RoomPage = () => {
       {/* Navbar Section */}
       <nav className="h-14 flex items-center justify-between px-6 bg-[#0a0a0a] border-b border-white/5 z-50">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-             <Play className="text-primary fill-current" size={20} />
-             <span className="text-xl font-black tracking-tighter italic">Wavvy</span>
+          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate('/')}>
+             <Play className="text-primary fill-current drop-shadow-[0_0_10px_rgba(249,115,22,0.5)] group-hover:scale-110 transition-transform" size={22} />
+             <span className="text-2xl font-brand tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-300 drop-shadow-lg">Wavvy</span>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium text-white/40">
              <div className="flex items-center gap-2">
