@@ -40,6 +40,11 @@ const roomSchema = new mongoose.Schema({
     email: String,
     joinedAt: { type: Date, default: Date.now }
   }],
+  messages: [{
+    message: String,
+    sender: String,
+    timestamp: { type: Date, default: Date.now }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

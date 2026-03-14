@@ -63,6 +63,10 @@ const RoomPage = () => {
       setMessages(prev => [...prev, msg]);
     });
 
+    socketRef.current.on('chat-history', (history) => {
+      setMessages(history);
+    });
+
     socketRef.current.on('update-members', (userList) => {
       setMembers(userList);
     });

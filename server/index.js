@@ -120,6 +120,11 @@ io.on('connection', (socket) => {
       socket.emit('sync-playlist', room.playlist || []);
       socket.emit('sync-auto-play', room.autoPlayNext);
       
+      // Emit chat history
+      if (room.messages && room.messages.length > 0) {
+        socket.emit('chat-history', room.messages);
+      }
+      
       // Broadcast updated member list
       const members = await getRoomMembers(roomId);
       io.to(roomId).emit('update-members', members);
@@ -164,8 +169,19 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('send-message', ({ roomId, message, sender }) => {
-    io.to(roomId).emit('receive-message', { message, sender, timestamp: new Date() });
+  socket.on('send-message', async ({ roomId, message, sender }) => {
+    try {
+      const msgData = { message, sender, timestamp: new Date() };
+      io.to(roomId).emit('receive-message', msgData);
+      
+      // Save to DB
+      await Room.findOneAndUpdate(
+        { roomId },
+        { $push: { messages: msgData } }
+      );
+    } catch (err) {
+      console.error('Save message error:', err);
+    }
   });
 
   socket.on('add-to-playlist', async ({ roomId, url }) => {
