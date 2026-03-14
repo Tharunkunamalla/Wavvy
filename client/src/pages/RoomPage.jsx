@@ -426,21 +426,36 @@ const RoomPage = () => {
 
   const onPlay = () => {
     if (!hasInteracted) return;
+    if (!canControl) {
+      if (!isSyncing.current) {
+        setIsPlaying(cachedRoomState.state === 'playing');
+      }
+      return;
+    }
     if (isSyncing.current || !playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
+    
+    const time = playerRef.current.getCurrentTime() || 0;
     socketRef.current.emit('video-state-change', { 
       roomId, 
       state: 'playing', 
-      time: playerRef.current.getCurrentTime() 
+      time 
     });
     setIsPlaying(true);
   };
 
   const onSeek = (seconds) => {
-    if (!hasInteracted || !canControl) return;
+    if (!hasInteracted) return;
+    if (!canControl) {
+      if (!isSyncing.current && playerRef.current) {
+         playerRef.current.seekTo(cachedRoomState.time || 0, 'seconds');
+      }
+      return;
+    }
+    const finalSeconds = seconds || 0;
     socketRef.current.emit('video-state-change', { 
       roomId, 
       state: isPlaying ? 'playing' : 'paused', 
-      time: seconds
+      time: finalSeconds
     });
   };
 
@@ -452,11 +467,19 @@ const RoomPage = () => {
 
   const onPause = () => {
     if (!hasInteracted) return;
+    if (!canControl) {
+      if (!isSyncing.current) {
+        setIsPlaying(cachedRoomState.state === 'playing');
+      }
+      return;
+    }
     if (isSyncing.current || !playerRef.current || typeof playerRef.current.getCurrentTime !== 'function') return;
+    
+    const time = playerRef.current.getCurrentTime() || 0;
     socketRef.current.emit('video-state-change', { 
       roomId, 
       state: 'paused', 
-      time: playerRef.current.getCurrentTime() 
+      time 
     });
     setIsPlaying(false);
   };
