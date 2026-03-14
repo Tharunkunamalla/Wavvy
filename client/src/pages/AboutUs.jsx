@@ -83,6 +83,64 @@ const About = () => {
             </div>
           </div>
         </section>
+
+        {/* Mission */}
+        <section className="max-w-5xl mx-auto mt-28 px-6">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
+            <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
+
+            <p className="text-gray-400 text-lg">
+              To make shared experiences feel truly shared — regardless of how
+              many miles separate you.
+            </p>
+          </div>
+        </section>
+
+        {/* Values */}
+        <section className="max-w-6xl mx-auto mt-24 px-6">
+          <h2 className="text-3xl font-bold text-center mb-14">
+            What We Stand For
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 text-center">
+              <Zap className="text-orange-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold">Simplicity</h3>
+              <p className="text-gray-400 mt-3 text-sm">
+                No plugins. No downloads. Paste a link and watch instantly.
+              </p>
+            </div>
+
+            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 text-center">
+              <Shield className="text-orange-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold">Accessibility</h3>
+              <p className="text-gray-400 mt-3 text-sm">
+                Watching together should be free for everyone.
+              </p>
+            </div>
+
+            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 text-center">
+              <Heart className="text-orange-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold">Community</h3>
+              <p className="text-gray-400 mt-3 text-sm">
+                Built for friends, families, and fandoms.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="text-center mt-28 pb-20">
+          <h2 className="text-3xl font-bold mb-6">Ready to watch together?</h2>
+
+          <button className="bg-orange-500 hover:bg-orange-600 px-8 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto">
+            <Play size={18} /> Start Watching Free
+          </button>
+
+          <p className="text-gray-500 mt-10 text-sm">
+            © 2026 Wavvy. Watch together, wherever you are.
+          </p>
+        </section>
       </div>
     </>
   );
