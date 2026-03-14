@@ -761,9 +761,9 @@ const RoomPage = () => {
         </main>
 
         {/* Sidebar: Chat & Members */}
-        <aside className="w-[420px] bg-[#0f0f0f] border-l border-white/5 flex flex-col">
+        <aside className="w-[420px] bg-[#0f0f0f] border-l border-white/5 flex flex-col overflow-y-auto custom-scrollbar pb-4 shrink-0">
            {/* Unified Chat Card */}
-           <div className="flex-1 flex flex-col overflow-hidden border-b border-white/5 m-4 bg-[#141414] rounded-xl border border-white/5 shadow-lg">
+           <div className="flex-1 min-h-[450px] shrink-0 flex flex-col overflow-hidden border-b border-white/5 m-4 bg-[#141414] rounded-xl border border-white/5 shadow-lg">
               <div className="h-12 flex items-center justify-between px-5 border-b border-white/5">
                  <h4 className="text-sm font-bold">Chat</h4>
                  <Settings2 size={14} className="text-white/20" />
@@ -822,7 +822,7 @@ const RoomPage = () => {
            </div>
 
            {/* Members Card */}
-           <div className="h-[300px] flex flex-col m-4 mt-0 bg-[#141414] rounded-xl border border-white/5 shadow-lg overflow-hidden shrink-0">
+           <div className="h-[350px] shrink-0 flex flex-col m-4 mt-0 bg-[#141414] rounded-xl border border-white/5 shadow-lg overflow-hidden">
               <div className="h-12 flex items-center px-5 border-b border-white/5 gap-2">
                  <Users size={14} className="text-white/40" />
                  <h4 className="text-sm font-bold">Members</h4>
