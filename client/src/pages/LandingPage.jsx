@@ -306,7 +306,7 @@ const LandingPage = () => {
               <div
                 key={room.id}
                 onClick={() => navigate(`/room/${room.id}`)}
-                className="bg-[#111] p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-all cursor-pointer flex flex-col gap-4"
+                className="bg-[#111] p-5 rounded-2xl border border-white/5 hover:border-orange-500 transition-all cursor-pointer flex flex-col gap-4"
               >
                 <h4 className="font-bold text-lg text-white">
                   {room.name || "Untitled Room"}

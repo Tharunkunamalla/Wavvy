@@ -816,6 +816,34 @@ const RoomPage = () => {
            </div>
         </aside>
       </div>
+      {/* Incoming Video Call Modal */}
+      {incomingCall && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+               <Video size={32} className="text-primary" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">Incoming Video Call</h3>
+            <p className="text-white/60 text-sm mb-6">
+              <span className="font-bold text-white">{incomingCall}</span> has started a video call for this room.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIncomingCall(null)} 
+                className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-colors"
+              >
+                Decline
+              </button>
+              <button 
+                onClick={() => startVideoCall(false)} 
+                className="flex-1 bg-primary hover:bg-primary/90 text-black font-bold py-3 rounded-xl transition-colors"
+              >
+                Join Call
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
