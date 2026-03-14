@@ -511,9 +511,18 @@ const RoomPage = () => {
              </button>
           </div>
         </div>
-        <button onClick={() => navigate('/')} className="text-xs font-bold uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2">
-           <LogOut size={14} /> Exit
-        </button>
+        <div className="flex items-center gap-5">
+           <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black shadow-inner">
+                 {user?.name ? user.name.charAt(0).toUpperCase() : '?'}
+              </div>
+              <span className="text-sm font-bold text-white/90 tracking-tight">{user?.name || 'Guest'}</span>
+           </div>
+           <div className="w-px h-5 bg-white/10 mx-1"></div>
+           <button onClick={() => navigate('/')} className="text-xs font-bold uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2">
+              <LogOut size={14} /> Exit
+           </button>
+        </div>
       </nav>
 
       <div className="flex-1 flex overflow-hidden">
