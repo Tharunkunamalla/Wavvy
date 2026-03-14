@@ -493,10 +493,20 @@ const RoomPage = () => {
           </div>
           <div className="flex items-center gap-4 text-xs font-medium text-white/40">
              <div className="flex items-center gap-2">
-                <Copy size={12} className="cursor-pointer hover:text-white" onClick={() => { navigator.clipboard.writeText(roomId); alert('ID Copied!'); }} />
+                <Copy size={12} className="cursor-pointer hover:text-white transition-colors" onClick={() => { 
+                   navigator.clipboard.writeText(roomId); 
+                   toast.success('Room ID Copied!', {
+                     style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+                   }); 
+                }} />
                 <span>Room ID: {roomId}</span>
              </div>
-             <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link Copied!'); }} className="flex items-center gap-1 hover:text-white transition-colors">
+             <button onClick={() => { 
+                navigator.clipboard.writeText(window.location.href); 
+                toast.success('Share Link Copied!', {
+                  style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+                }); 
+             }} className="flex items-center gap-1 hover:text-white transition-colors">
                 <LinkIcon size={12} /> Share link
              </button>
           </div>
