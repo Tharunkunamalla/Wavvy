@@ -20,6 +20,8 @@ const LandingPage = () => {
   const [roomName, setRoomName] = useState("");
   const [myRooms, setMyRooms] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [joinError, setJoinError] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -48,11 +50,26 @@ const LandingPage = () => {
     navigate(`/room/${newRoomId}`, {state: {roomName: roomName.trim()}});
   };
 
-  const handleJoinRoom = (e) => {
+  const handleJoinRoom = async (e) => {
     e.preventDefault();
     if (!user) return navigate("/login");
+    
     const tid = roomId.trim();
-    if (tid) {
+    if (!tid) return;
+
+    try {
+      setJoinError("");
+      setIsJoining(true);
+      
+      const res = await fetch(`http://localhost:5001/api/check-room?roomId=${tid}`);
+      const data = await res.json();
+      
+      if (!data.exists) {
+        setJoinError("Room not found. Please check the ID.");
+        setIsJoining(false);
+        return;
+      }
+
       // Add to recent if not already there
       if (!myRooms.find((r) => r.id === tid)) {
         const newEntry = {
@@ -64,6 +81,10 @@ const LandingPage = () => {
         localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updated));
       }
       navigate(`/room/${tid}`);
+    } catch (err) {
+      console.error("Failed to check room:", err);
+      setJoinError("Failed to join room. Please try again.");
+      setIsJoining(false);
     }
   };
 
@@ -143,27 +164,42 @@ const LandingPage = () => {
                     Create Room
                   </button>
                   <div className="relative flex-1 max-w-sm">
-                    <input
-                      type="text"
-                      placeholder="Paste Room ID to join..."
-                     className="w-full bg-zinc-900 border border-orange-500 rounded-2xl py-5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all text-sm font-bold h-full"
+                    <div className="relative w-full">
+                      <input
+                        type="text"
+                        placeholder="Paste Room ID to join..."
+                       className={`w-full bg-zinc-900 border ${joinError ? 'border-red-500/50 focus:border-red-500' : 'border-white/5 focus:border-orange-500'} rounded-2xl py-5 pl-12 pr-4 focus:outline-none transition-all text-sm font-bold h-full`}
 
-                      value={roomId}
-                      onChange={(e) => setRoomId(e.target.value)}
-                    />
-                    <Search
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
-                      size={18}
-                    />
-                    {roomId.trim() && (
-                      <button
-                        onClick={handleJoinRoom}
-                        className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all"
-                      >
-                        Join
-                      </button>
-                    )}
+                        value={roomId}
+                        onChange={(e) => {
+                          setRoomId(e.target.value);
+                          if (joinError) setJoinError("");
+                        }}
+                      />
+                      <Search
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
+                        size={18}
+                      />
+                      {roomId.trim() && (
+                        <button
+                          onClick={handleJoinRoom}
+                          disabled={isJoining}
+                          className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {isJoining ? (
+                            <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                          ) : (
+                            "Join"
+                          )}
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {joinError && (
+                    <p className="text-red-500 text-xs font-bold mt-2 flex items-center gap-1">
+                      {joinError}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-black text-white/20 tracking-[0.2em] uppercase">
                   <Monitor size={14} />
@@ -224,24 +260,34 @@ const LandingPage = () => {
 
               {/* Join Room Card */}
               <div className="bg-[#111] border border-white/5 rounded-[1.25rem] p-6 flex flex-col justify-center gap-3 min-h-[140px]">
-                <label className="text-sm font-medium text-white/70">
-                  Join with Room ID
+                <label className="text-sm font-medium text-white/70 flex justify-between">
+                  <span>Join with Room ID</span>
+                  {joinError && <span className="text-red-500 text-xs">{joinError}</span>}
                 </label>
-                <div className="flex gap-4">
-                  <input
-                    type="text"
-                    placeholder="Enter room ID"
-                    className="flex-1 bg-black border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-white/20 transition-all font-medium text-sm text-white"
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                  />
-                  <button
-                    onClick={handleJoinRoom}
-                    disabled={!roomId.trim()}
-                    className="bg-zinc-600 hover:bg-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-xl transition-all text-sm"
-                  >
-                    Join Room
-                  </button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-4">
+                    <input
+                      type="text"
+                      placeholder="Enter room ID"
+                      className={`flex-1 bg-black border ${joinError ? 'border-red-500/50 focus:border-red-500' : 'border-white/5 focus:border-orange-500'} rounded-xl py-3 px-4 focus:outline-none transition-all font-medium text-sm text-white`}
+                      value={roomId}
+                      onChange={(e) => {
+                        setRoomId(e.target.value);
+                        if (joinError) setJoinError("");
+                      }}
+                    />
+                    <button
+                      onClick={handleJoinRoom}
+                      disabled={!roomId.trim() || isJoining}
+                      className="bg-zinc-600 hover:bg-zinc-500 flex items-center justify-center min-w-[100px] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-4 py-3 rounded-xl transition-all text-sm"
+                    >
+                      {isJoining ? (
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        "Join Room"
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

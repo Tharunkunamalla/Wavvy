@@ -556,10 +556,10 @@ const RoomPage = () => {
                               <span className="text-[8px] font-medium text-white/20">{timeStr}</span>
                               {isMe && <span className="text-[10px] font-black text-white/40 uppercase tracking-tighter">You</span>}
                            </div>
-                           <div className={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] font-medium leading-relaxed transition-all hover:shadow-lg ${
-                              isMe 
-                              ? 'bg-zinc-800 text-white rounded-tr-none border border-white/5 shadow-md' 
-                              : 'bg-white/5 text-white/90 rounded-tl-none border border-white/10'
+                           <div className={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] font-medium leading-relaxed transition-all hover:shadow-lg whitespace-pre-wrap ${
+                               isMe 
+                               ? 'bg-zinc-800 text-white rounded-tr-none border border-white/5 shadow-md' 
+                               : 'bg-white/5 text-white/90 rounded-tl-none border border-white/10'
                            }`}>
                               {msg.message}
                            </div>
@@ -570,14 +570,20 @@ const RoomPage = () => {
               </div>
               <div className="p-4 bg-black/20">
                  <form onSubmit={sendMessage} className="relative flex items-center gap-2">
-                    <input 
-                       type="text" 
+                    <textarea 
+                       rows={1}
                        placeholder="Type a message..." 
-                       className="flex-1 bg-[#1e1e1e] border border-white/5 rounded-lg py-3 px-4 pr-12 text-sm focus:outline-none focus:border-white/10 transition-all font-medium" 
+                       className="flex-1 bg-[#1e1e1e] border border-white/5 rounded-lg py-3 px-4 pr-12 text-sm focus:outline-none focus:border-white/10 transition-all font-medium resize-none min-h-[46px] max-h-[120px]" 
                        value={message} 
                        onChange={(e) => setMessage(e.target.value)} 
+                       onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                             e.preventDefault();
+                             sendMessage(e);
+                          }
+                       }}
                     />
-                    <button className="absolute right-2 text-white/20 hover:text-primary transition-colors">
+                    <button type="submit" className="absolute right-3 text-white/20 hover:text-primary transition-colors">
                        <Send size={18} />
                     </button>
                  </form>
