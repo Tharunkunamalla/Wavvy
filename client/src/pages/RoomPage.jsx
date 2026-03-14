@@ -497,6 +497,29 @@ const RoomPage = () => {
               )}
            </div>
 
+           {/* Native WebRTC Video Call Grid */}
+           {isInCall && (
+             <div className="bg-[#141414] rounded-xl border border-white/5 p-4 shadow-lg flex gap-4 overflow-x-auto custom-scrollbar relative">
+                <button 
+                  onClick={endVideoCall}
+                  className="absolute right-4 top-4 z-10 bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110"
+                  title="End Call"
+                >
+                  <X size={16} />
+                </button>
+                <div className="w-48 h-32 shrink-0 relative bg-black rounded-lg overflow-hidden border border-white/10 group">
+                   {localStream ? <PeerVideo stream={localStream} isLocal={true} /> : <div className="h-full flex items-center justify-center"><Video className="text-white/20 animate-pulse"/></div>}
+                   <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm">You</div>
+                </div>
+                {Object.entries(peers).map(([peerId, stream]) => (
+                  <div key={peerId} className="w-48 h-32 shrink-0 relative bg-black rounded-lg overflow-hidden border border-white/10 group">
+                     <PeerVideo stream={stream} isLocal={false} />
+                     <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm">Peer</div>
+                  </div>
+                ))}
+             </div>
+           )}
+
            {/* Section 2: Load Video Card - Based on Image 2 */}
            <div className="bg-[#141414] rounded-xl border border-white/5 p-8 shadow-lg">
               <div className="flex items-center justify-between mb-6">
