@@ -1,11 +1,12 @@
-import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
-import RoomPage from './pages/RoomPage'
-import LoginPage from './pages/LoginPage'
+import React from "react";
+import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
+import RoomPage from "./pages/RoomPage";
+import LoginPage from "./pages/LoginPage";
+import About from "./pages/AboutUs";
 
-const ProtectedRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem('user'));
+const ProtectedRoute = ({children}) => {
+  const user = JSON.parse(localStorage.getItem("user"));
   if (!user) {
     return <LoginPage />;
   }
@@ -18,14 +19,15 @@ function App() {
       <div className="min-h-screen bg-black overflow-x-hidden">
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route 
-            path="/room/:roomId" 
+          <Route path="/about?" element={<About />} />
+          <Route path="/login?" element={<LoginPage />} />
+          <Route
+            path="/room/:roomId"
             element={
               <ProtectedRoute>
                 <RoomPage />
               </ProtectedRoute>
-            } 
+            }
           />
         </Routes>
       </div>
@@ -33,4 +35,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

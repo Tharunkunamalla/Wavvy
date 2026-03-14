@@ -1,42 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Play, Plus, Search, Video, Github, Clock, Monitor, Users, ArrowRight } from 'lucide-react';
+import React, {useState, useEffect} from "react";
+import {useNavigate} from "react-router-dom";
+import {
+  Play,
+  Plus,
+  Search,
+  Video,
+  Github,
+  Clock,
+  Monitor,
+  Users,
+  ArrowRight,
+  CardSim,
+  CreditCardIcon,
+} from "lucide-react";
+import {Link} from "react-router-dom";
 
 const LandingPage = () => {
-  const [roomId, setRoomId] = useState('');
-  const [roomName, setRoomName] = useState('');
+  const [roomId, setRoomId] = useState("");
+  const [roomName, setRoomName] = useState("");
   const [myRooms, setMyRooms] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     if (user && user.email) {
-      const savedRooms = JSON.parse(localStorage.getItem(`myRooms_${user.email}`) || '[]');
+      const savedRooms = JSON.parse(
+        localStorage.getItem(`myRooms_${user.email}`) || "[]",
+      );
       setMyRooms(savedRooms);
     }
   }, [user?.email]);
 
   const handleCreateRoom = (e) => {
     e.preventDefault();
-    if (!user) return navigate('/login');
+    if (!user) return navigate("/login");
     if (!roomName.trim()) return;
 
     const newRoomId = Math.random().toString(36).substring(2, 9);
-    const newRoom = { id: newRoomId, name: roomName.trim(), createdAt: new Date().toISOString() };
+    const newRoom = {
+      id: newRoomId,
+      name: roomName.trim(),
+      createdAt: new Date().toISOString(),
+    };
     const updatedRooms = [newRoom, ...myRooms];
     localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updatedRooms));
-    navigate(`/room/${newRoomId}`, { state: { roomName: roomName.trim() } });
+    navigate(`/room/${newRoomId}`, {state: {roomName: roomName.trim()}});
   };
 
   const handleJoinRoom = (e) => {
     e.preventDefault();
-    if (!user) return navigate('/login');
+    if (!user) return navigate("/login");
     const tid = roomId.trim();
     if (tid) {
       // Add to recent if not already there
-      if (!myRooms.find(r => r.id === tid)) {
-        const newEntry = { id: tid, name: 'Joined Room', createdAt: new Date().toISOString() };
+      if (!myRooms.find((r) => r.id === tid)) {
+        const newEntry = {
+          id: tid,
+          name: "Joined Room",
+          createdAt: new Date().toISOString(),
+        };
         const updated = [newEntry, ...myRooms];
         localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updated));
       }
@@ -45,7 +68,7 @@ const LandingPage = () => {
   };
 
   const handleGetStarted = () => {
-    if (!user) navigate('/login');
+    if (!user) navigate("/login");
     else setShowCreateModal(true);
   };
 
@@ -55,28 +78,40 @@ const LandingPage = () => {
       <nav className="h-20 flex items-center justify-between px-12 z-50">
         <div className="flex items-center gap-2">
           <Play className="text-white fill-current" size={24} />
-          <span className="text-2xl font-black tracking-tighter italic">Wavvy</span>
+          <span className="text-2xl font-black tracking-tighter italic">
+            Wavvy
+          </span>
         </div>
         <div className="flex items-center gap-6">
           {!user ? (
-            <button onClick={() => navigate('/login')} className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-full text-sm font-bold border border-white/10 transition-all">
+            <button
+              onClick={() => navigate("/login")}
+              className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-full text-sm font-bold border border-white/10 transition-all"
+            >
               Sign In
             </button>
           ) : (
             <div className="flex items-center gap-4 bg-white/5 p-2 pr-4 rounded-full border border-white/5">
-               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black shadow-lg shadow-primary/20">
-                 {user.name.charAt(0).toUpperCase()}
-               </div>
-               <div className="flex flex-col">
-                  <span className="text-white/80 text-xs font-black uppercase tracking-widest leading-none">Hello,</span>
-                  <span className="text-white text-sm font-black italic">{user.name}</span>
-               </div>
-               <button 
-                onClick={() => { localStorage.removeItem('user'); window.location.reload(); }}
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black shadow-lg shadow-primary/20">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-white/80 text-xs font-black uppercase tracking-widest leading-none">
+                  Hello,
+                </span>
+                <span className="text-white text-sm font-black italic">
+                  {user.name}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.removeItem("user");
+                  window.location.reload();
+                }}
                 className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-red-500 transition-colors"
-               >
-                 Logout
-               </button>
+              >
+                Logout
+              </button>
             </div>
           )}
         </div>
@@ -91,14 +126,14 @@ const LandingPage = () => {
               <span className="text-primary italic">Perfectly Synced</span>
             </h1>
             <p className="text-xl text-white/40 leading-relaxed max-w-lg font-medium">
-              Experience movies and shows with friends in perfect harmony. 
+              Experience movies and shows with friends in perfect harmony.
               Real-time sync, video calls, and instant chat—all in one place.
             </p>
           </div>
 
           <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row gap-4">
-              <button 
+              <button
                 onClick={handleGetStarted}
                 className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all text-lg shadow-2xl shadow-white/10"
               >
@@ -106,16 +141,19 @@ const LandingPage = () => {
                 Create Room
               </button>
               <div className="relative flex-1 max-w-sm">
-                <input 
-                  type="text" 
-                  placeholder="Paste Room ID to join..." 
+                <input
+                  type="text"
+                  placeholder="Paste Room ID to join..."
                   className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-5 pl-12 pr-4 focus:outline-none focus:border-primary/50 transition-all text-sm font-bold h-full"
                   value={roomId}
                   onChange={(e) => setRoomId(e.target.value)}
                 />
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
+                <Search
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
+                  size={18}
+                />
                 {roomId.trim() && (
-                  <button 
+                  <button
                     onClick={handleJoinRoom}
                     className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all"
                   >
@@ -125,33 +163,33 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-black text-white/20 tracking-[0.2em] uppercase">
-               <Monitor size={14} />
-               <span>Free Forever</span>
-               <span className="w-1 h-1 bg-white/20 rounded-full mx-1"></span>
-               <Github size={14} />
-               <span>No Credit Card</span>
+              <Monitor size={14} />
+              <span>Free Forever</span>
+              <span className="w-1 h-1 bg-white/20 rounded-full mx-1"></span>
+              <CreditCardIcon size={14} />
+              <span>No Credit Card</span>
             </div>
           </div>
         </div>
 
         {/* Right: Feature Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <FeatureCard 
+          <FeatureCard
             icon={<Clock className="text-white" size={24} />}
             title="Perfect Sync"
             desc="Real-time synchronization keeps everyone watching at the exact same moment"
           />
-          <FeatureCard 
+          <FeatureCard
             icon={<Users className="text-white" size={24} />}
             title="Video Calls"
             desc="See your friends' reactions in real-time with built-in video chat"
           />
-          <FeatureCard 
+          <FeatureCard
             icon={<Monitor className="text-white" size={24} />}
             title="Any Platform"
             desc="YouTube, direct links, and more—watch from anywhere"
           />
-          <FeatureCard 
+          <FeatureCard
             icon={<Play className="text-white" size={24} />}
             title="Live Chat"
             desc="Share reactions and jokes with instant messaging"
@@ -162,94 +200,120 @@ const LandingPage = () => {
       {/* Recently Created Rooms Section */}
       {user && myRooms.length > 0 && (
         <section className="max-w-7xl w-full mx-auto px-8 pb-20">
-           <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-1 w-px bg-primary"></div>
-              <h2 className="text-2xl font-bold italic tracking-tighter">My Rooms</h2>
-           </div>
-           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {myRooms.map((room) => (
-                <div 
-                  key={room.id}
-                  onClick={() => navigate(`/room/${room.id}`)}
-                  className="bg-zinc-900 shadow-2xl p-8 rounded-[2rem] border border-white/5 hover:border-primary/50 transition-all cursor-pointer group"
-                >
-                  <h4 className="font-black text-xl mb-2 group-hover:text-primary transition-colors">{room.name || 'Untitled Room'}</h4>
-                  <div className="flex items-center justify-between text-xs font-medium text-white/20 uppercase tracking-widest">
-                     <div className="flex items-center gap-2">
-                        <Clock size={12} />
-                        <span>{new Date(room.createdAt).toLocaleDateString()}</span>
-                     </div>
-                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-1 w-px bg-primary"></div>
+            <h2 className="text-2xl font-bold italic tracking-tighter">
+              My Rooms
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {myRooms.map((room) => (
+              <div
+                key={room.id}
+                onClick={() => navigate(`/room/${room.id}`)}
+                className="bg-zinc-900 shadow-2xl p-8 rounded-[2rem] border border-white/5 hover:border-primary/50 transition-all cursor-pointer group"
+              >
+                <h4 className="font-black text-xl mb-2 group-hover:text-primary transition-colors">
+                  {room.name || "Untitled Room"}
+                </h4>
+                <div className="flex items-center justify-between text-xs font-medium text-white/20 uppercase tracking-widest">
+                  <div className="flex items-center gap-2">
+                    <Clock size={12} />
+                    <span>{new Date(room.createdAt).toLocaleDateString()}</span>
                   </div>
+                  <ArrowRight
+                    size={14}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
                 </div>
-              ))}
-           </div>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
       {/* Footer */}
       <footer className="py-12 px-8 flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto border-t border-white/5">
-         <div className="flex gap-8 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-            <span className="hover:text-white transition-colors cursor-pointer">About Us</span>
-            <span className="hover:text-white transition-colors cursor-pointer">Contact Us</span>
-         </div>
-         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 mt-6 sm:mt-0">
-           © 2026 Wavvy. Watch together, wherever you are.
-         </p>
+        <div className="flex gap-8 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
+          <span className="hover:text-white transition-colors cursor-pointer">
+            <Link to="/about?" className="hover:text-white transition-colors">
+              About Us
+            </Link>
+          </span>
+          <span className="hover:text-white transition-colors cursor-pointer">
+            <Link
+              to="/contact?"
+              className="hover:text-white hover:-translate-x-1 transition-all duration-300 cursor-pointer"
+            >
+              Contact Us
+            </Link>
+          </span>
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 mt-6 sm:mt-0">
+          © 2026 Wavvy. Watch together, wherever you are.
+        </p>
       </footer>
 
       {/* Create Room Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
-           <div className="bg-zinc-900 w-full max-w-lg rounded-[2.5rem] border border-white/10 p-12 shadow-2xl relative">
-              <button 
-                onClick={() => setShowCreateModal(false)}
-                className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors"
-              >
-                <Plus className="rotate-45" size={32} />
-              </button>
-              <h2 className="text-4xl font-black tracking-tight italic mb-2">Create New Room</h2>
-              <p className="text-white/40 font-medium mb-10">Choose a name for your watch party</p>
-              <form onSubmit={handleCreateRoom} className="space-y-6">
-                <input 
-                  autoFocus
-                  type="text" 
-                  placeholder="Enter room name (e.g. Movie Night)" 
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 focus:outline-none focus:border-primary/50 transition-all text-lg font-bold"
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                />
-                <div className="flex gap-4">
-                  <button 
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-5 rounded-2xl transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="flex-[2] bg-primary text-black font-black py-5 rounded-2xl transition-all shadow-xl shadow-primary/20"
-                  >
-                    Create Room
-                  </button>
-                </div>
-              </form>
-           </div>
+          <div className="bg-zinc-900 w-full max-w-lg rounded-[2.5rem] border border-white/10 p-12 shadow-2xl relative">
+            <button
+              onClick={() => setShowCreateModal(false)}
+              className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors"
+            >
+              <Plus className="rotate-45" size={32} />
+            </button>
+            <h2 className="text-4xl font-black tracking-tight italic mb-2">
+              Create New Room
+            </h2>
+            <p className="text-white/40 font-medium mb-10">
+              Choose a name for your watch party
+            </p>
+            <form onSubmit={handleCreateRoom} className="space-y-6">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Enter room name (e.g. Movie Night)"
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 focus:outline-none focus:border-primary/50 transition-all text-lg font-bold"
+                value={roomName}
+                onChange={(e) => setRoomName(e.target.value)}
+              />
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-5 rounded-2xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-[2] bg-primary text-black font-black py-5 rounded-2xl transition-all shadow-xl shadow-primary/20"
+                >
+                  Create Room
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-const FeatureCard = ({ icon, title, desc }) => (
+const FeatureCard = ({icon, title, desc}) => (
   <div className="bg-zinc-900 border border-white/5 p-10 rounded-[2.5rem] space-y-6 hover:bg-zinc-800/50 transition-all group">
     <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-primary transition-colors">
-      {React.cloneElement(icon, { className: "text-white group-hover:text-black transition-colors" })}
+      {React.cloneElement(icon, {
+        className: "text-white group-hover:text-black transition-colors",
+      })}
     </div>
     <div className="space-y-2">
       <h3 className="text-xl font-bold italic tracking-tighter">{title}</h3>
-      <p className="text-sm text-white/40 font-medium leading-relaxed">{desc}</p>
+      <p className="text-sm text-white/40 font-medium leading-relaxed">
+        {desc}
+      </p>
     </div>
   </div>
 );
