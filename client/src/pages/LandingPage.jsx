@@ -243,12 +243,12 @@ const LandingPage = () => {
         ) : (
           <div className="space-y-10">
             {/* Welcome Text */}
-            <div className="space-y-1">
-              <h1 className="text-4xl font-bold tracking-tight">
-                Welcome back, <span className="text-primary drop-shadow-lg shadow-orange-500/20">{user.name}</span>!
+            <div className="space-y-2">
+              <h1 className="text-5xl font-brand tracking-wide drop-shadow-lg flex items-center gap-3">
+                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-300 drop-shadow-xl">{user.name}</span>!
               </h1>
-              <p className="text-white/70 font-medium">
-                Create a room or join one to start watching together
+              <p className="text-white/60 font-medium tracking-wide uppercase text-sm mt-2">
+                 Create a room or join one to start watching together
               </p>
             </div>
 
