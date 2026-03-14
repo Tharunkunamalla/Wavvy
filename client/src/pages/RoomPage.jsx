@@ -217,9 +217,9 @@ const RoomPage = () => {
       isSyncing.current = true;
       setCachedRoomState({ state, time });
       
-      if (hasInteracted) {
-        setIsPlaying(state === 'playing');
-      }
+      // Always sync the playback state, even if they haven't interacted yet! 
+      // (Because it is muted=true, background autoplay works)
+      setIsPlaying(state === 'playing');
       
       const player = playerRef.current;
       if (player && typeof player.getInternalPlayer === 'function') {
