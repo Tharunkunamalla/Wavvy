@@ -365,7 +365,7 @@ const LandingPage = () => {
             </Link>
           </span>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/10 mt-6 sm:mt-0">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mt-6 sm:mt-0">
           © 2026 Wavvy. Watch together, wherever you are.
         </p>
       </footer>
