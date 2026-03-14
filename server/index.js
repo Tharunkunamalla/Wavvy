@@ -294,6 +294,21 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('request-mod', async ({ roomId, userName }) => {
+    try {
+      const room = await Room.findOne({ roomId });
+      if (room && room.host) {
+        const socketsInRoom = await io.in(roomId).fetchSockets();
+        const hostSocket = socketsInRoom.find(s => s.data.userId === room.host || s.id === room.host);
+        if (hostSocket) {
+          io.to(hostSocket.id).emit('mod-request', { userId: socket.id, userName });
+        }
+      }
+    } catch (err) {
+      console.error('Request mod error:', err);
+    }
+  });
+
   socket.on('toggle-auto-play', async ({ roomId, autoPlayNext }) => {
     try {
       if (socket.data.canControl) {

@@ -7,7 +7,7 @@ import {
   Send, Users, Video, Link as LinkIcon, LogOut, Play, Plus, 
   Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, 
   XCircle, Trash2, Copy, Check, Info, ChevronRight, SkipForward,
-  Settings2, MessageSquare, History, AlignLeft, Maximize2, RefreshCw, Repeat, X
+  Settings2, MessageSquare, History, AlignLeft, Maximize2, RefreshCw, Repeat, X, AlertTriangle
 } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
@@ -163,6 +163,46 @@ const RoomPage = () => {
            style: { background: '#111', color: '#fff', border: '1px solid rgba(255,0,0,0.2)' }
          });
       }
+    });
+
+    socketRef.current.on('mod-request', ({ userId, userName }) => {
+       toast((t) => (
+         <div className="flex flex-col gap-3 p-1 font-sans w-[250px]">
+           <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center animate-pulse shrink-0">
+               <AlertTriangle size={20} className="text-orange-500" />
+             </div>
+             <div className="min-w-0">
+               <p className="font-bold text-sm text-white truncate">{userName}</p>
+               <p className="text-xs text-white/60 truncate">Wants Mod access</p>
+             </div>
+           </div>
+           <div className="flex gap-2 mt-2">
+             <button
+               onClick={() => {
+                 toast.dismiss(t.id);
+                 socketRef.current.emit('toggle-permission', { roomId, targetId: userId, canControl: true });
+                 toast.success(`${userName} is now a moderator`, {
+                   style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+                 });
+               }}
+               className="flex-1 bg-green-500/20 text-green-500 hover:bg-green-500/30 font-bold py-2 rounded-lg text-xs transition-colors border border-green-500/20"
+             >
+               Grant
+             </button>
+             <button
+               onClick={() => toast.dismiss(t.id)}
+               className="flex-1 bg-[#222] hover:bg-[#333] text-white font-bold py-2 rounded-lg text-xs transition-colors"
+             >
+               Ignore
+             </button>
+           </div>
+         </div>
+       ), {
+         duration: 15000,
+         position: 'top-right',
+         style: { background: '#111', color: '#fff', border: '1px solid rgba(255,165,0,0.2)', borderRadius: '16px', padding: '16px' }
+       });
     });
 
     socketRef.current.on('sync-video-load', ({ url }) => {
@@ -477,6 +517,13 @@ const RoomPage = () => {
     socketRef.current.emit('invite-to-video-call', { targetId, callerName: user.name });
     setShowMemberMenu(null);
     toast.success('Invitation sent!', {
+      style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+    });
+  };
+
+  const requestModAccess = () => {
+    socketRef.current.emit('request-mod', { roomId, userName: user.name });
+    toast.success('Request sent to the host!', {
       style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
     });
   };
@@ -915,6 +962,13 @@ const RoomPage = () => {
                          <Video size={18} /> Start Video Call
                       </button>
                     )}
+                 </div>
+              )}
+              {(!isHost && !canControl) && (
+                 <div className="p-4 border-t border-white/5 bg-black/40">
+                    <button onClick={requestModAccess} className="w-full py-4 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/40 text-orange-500 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg">
+                       <Shield size={16} /> Request Mod Access
+                    </button>
                  </div>
               )}
            </div>
