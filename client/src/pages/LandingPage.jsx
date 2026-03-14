@@ -9,6 +9,7 @@ import {
   Monitor,
   Users,
   CreditCardIcon,
+  Trash2
 } from "lucide-react";
 import {Link} from "react-router-dom";
 
@@ -88,6 +89,13 @@ const LandingPage = () => {
   const handleGetStarted = () => {
     if (!user) navigate("/login");
     else setShowCreateModal(true);
+  };
+
+  const handleDeleteRoom = (e, roomIdToDelete) => {
+    e.stopPropagation();
+    const updatedRooms = myRooms.filter(room => room.id !== roomIdToDelete);
+    setMyRooms(updatedRooms);
+    localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updatedRooms));
   };
 
   return (
@@ -237,7 +245,7 @@ const LandingPage = () => {
             {/* Welcome Text */}
             <div className="space-y-1">
               <h1 className="text-4xl font-bold tracking-tight">
-                Welcome back, {user.name}!
+                Welcome back, <span className="text-primary drop-shadow-lg shadow-orange-500/20">{user.name}</span>!
               </h1>
               <p className="text-white/70 font-medium">
                 Create a room or join one to start watching together
@@ -306,9 +314,15 @@ const LandingPage = () => {
               <div
                 key={room.id}
                 onClick={() => navigate(`/room/${room.id}`)}
-                className="bg-[#111] p-5 rounded-2xl border border-white/5 hover:border-orange-500 transition-all cursor-pointer flex flex-col gap-4"
+                className="bg-[#111] p-5 rounded-2xl border border-white/5 hover:border-orange-500 transition-all cursor-pointer flex flex-col gap-4 relative group"
               >
-                <h4 className="font-bold text-lg text-white">
+                <button
+                  onClick={(e) => handleDeleteRoom(e, room.id)}
+                  className="absolute right-4 top-4 text-white/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <h4 className="font-bold text-lg text-white pr-6">
                   {room.name || "Untitled Room"}
                 </h4>
                 <div className="flex flex-col gap-2">
