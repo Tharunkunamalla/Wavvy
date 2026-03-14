@@ -320,6 +320,14 @@ io.on('connection', (socket) => {
     io.to(target).emit('video-offer', { caller, sdp });
   });
 
+  socket.on('invite-to-video-call', ({ targetId, callerName }) => {
+    io.to(targetId).emit('incoming-video-call', { callerName });
+  });
+
+  socket.on('video-invite-response', ({ targetId, accepted, userName }) => {
+    io.to(targetId).emit('video-invite-response', { accepted, userName });
+  });
+
   socket.on('video-answer', ({ target, caller, sdp }) => {
     io.to(target).emit('video-answer', { caller, sdp });
   });

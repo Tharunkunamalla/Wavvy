@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactPlayer from 'react-player';
+import toast, { Toaster } from 'react-hot-toast';
 import { 
   Send, Users, Video, Link as LinkIcon, LogOut, Play, Plus, 
   Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, 
@@ -58,7 +59,6 @@ const RoomPage = () => {
   const [showMemberMenu, setShowMemberMenu] = useState(null);
   const [isQueueExpanded, setIsQueueExpanded] = useState(false);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
-  const [incomingCall, setIncomingCall] = useState(null);
 
   // WebRTC State
   const [isInCall, setIsInCall] = useState(false);
@@ -110,7 +110,58 @@ const RoomPage = () => {
     });
 
     socketRef.current.on('incoming-video-call', ({ callerName }) => {
-       setIncomingCall(callerName);
+       toast((t) => (
+         <div className="flex flex-col gap-3 p-1 font-sans">
+           <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center animate-pulse">
+               <Video size={20} className="text-primary" />
+             </div>
+             <div>
+               <p className="font-bold text-sm text-white">{callerName}</p>
+               <p className="text-xs text-white/60">Inviting you to Video Call</p>
+             </div>
+           </div>
+           <div className="flex gap-2 mt-2">
+             <button
+               onClick={() => {
+                 toast.dismiss(t.id);
+                 startVideoCall(false);
+                 socketRef.current.emit('video-invite-response', { targetId: callerName, accepted: true, userName: user.name });
+               }}
+               className="flex-1 bg-primary text-black font-bold py-2 rounded-lg text-xs transition-colors hover:bg-primary/90"
+             >
+               Join Call
+             </button>
+             <button
+               onClick={() => {
+                 toast.dismiss(t.id);
+                 socketRef.current.emit('video-invite-response', { targetId: callerName, accepted: false, userName: user.name });
+               }}
+               className="flex-1 bg-[#222] hover:bg-[#333] text-white font-bold py-2 rounded-lg text-xs transition-colors"
+             >
+               Decline
+             </button>
+           </div>
+         </div>
+       ), {
+         duration: 30000, // 30 seconds
+         position: 'top-center',
+         style: {
+           background: '#111',
+           color: '#fff',
+           border: '1px solid rgba(255,255,255,0.1)',
+           borderRadius: '16px',
+           padding: '16px',
+         },
+       });
+    });
+
+    socketRef.current.on('video-invite-response', ({ accepted, userName }) => {
+      if (!accepted) {
+         toast.error(`${userName} declined your video call invitation.`, {
+           style: { background: '#111', color: '#fff', border: '1px solid rgba(255,0,0,0.2)' }
+         });
+      }
     });
 
     socketRef.current.on('sync-video-load', ({ url }) => {
@@ -394,7 +445,6 @@ const RoomPage = () => {
       localStreamRef.current = stream;
       setIsInCall(true);
       isInCallRef.current = true;
-      setIncomingCall(null);
       socketRef.current.emit('join-video-call', { roomId });
       
       if (isInitiator) {
@@ -422,8 +472,17 @@ const RoomPage = () => {
     socketRef.current.emit('leave-video-call', { roomId });
   };
 
+  const inviteToCall = (targetId) => {
+    socketRef.current.emit('invite-to-video-call', { targetId, callerName: user.name });
+    setShowMemberMenu(null);
+    toast.success('Invitation sent!', {
+      style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
+      <Toaster />
       {/* Navbar Section */}
       <nav className="h-14 flex items-center justify-between px-6 bg-[#0a0a0a] border-b border-white/5 z-50">
         <div className="flex items-center gap-6">
@@ -794,6 +853,9 @@ const RoomPage = () => {
                              <button onClick={() => togglePermission(m.id, !m.canControl)} className="w-full text-left px-3 py-2 rounded-md hover:bg-white/5 text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-white/60">
                                 {m.canControl ? <ShieldOff size={12} /> : <Shield size={12} />} {m.canControl ? "Revoke" : "Grant"}
                              </button>
+                             <button onClick={() => inviteToCall(m.id)} className="w-full text-left px-3 py-2 rounded-md hover:bg-primary/10 text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-primary/80">
+                                <Video size={12} /> Video Call
+                             </button>
                              <button onClick={() => handleKick(m.id)} className="w-full text-left px-3 py-2 rounded-md hover:bg-red-500/10 text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-red-500/60">
                                 <XCircle size={12} /> Kick
                              </button>
@@ -816,34 +878,6 @@ const RoomPage = () => {
            </div>
         </aside>
       </div>
-      {/* Incoming Video Call Modal */}
-      {incomingCall && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-6">
-          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95">
-            <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-               <Video size={32} className="text-primary" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Incoming Video Call</h3>
-            <p className="text-white/60 text-sm mb-6">
-              <span className="font-bold text-white">{incomingCall}</span> has started a video call for this room.
-            </p>
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setIncomingCall(null)} 
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-colors"
-              >
-                Decline
-              </button>
-              <button 
-                onClick={() => startVideoCall(false)} 
-                className="flex-1 bg-primary hover:bg-primary/90 text-black font-bold py-3 rounded-xl transition-colors"
-              >
-                Join Call
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
