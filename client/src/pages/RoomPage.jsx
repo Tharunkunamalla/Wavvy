@@ -57,6 +57,7 @@ const RoomPage = () => {
   
   const user = JSON.parse(localStorage.getItem('user'));
   const [showMemberMenu, setShowMemberMenu] = useState(null);
+  const [showChatSettings, setShowChatSettings] = useState(false);
   const [isQueueExpanded, setIsQueueExpanded] = useState(false);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
@@ -764,9 +765,31 @@ const RoomPage = () => {
         <aside className="w-[420px] bg-[#0f0f0f] border-l border-white/5 flex flex-col overflow-y-auto custom-scrollbar pb-4 shrink-0">
            {/* Unified Chat Card */}
            <div className="flex-1 min-h-[450px] shrink-0 flex flex-col overflow-hidden border-b border-white/5 m-4 bg-[#141414] rounded-xl border border-white/5 shadow-lg">
-              <div className="h-12 flex items-center justify-between px-5 border-b border-white/5">
+              <div className="h-12 flex items-center justify-between px-5 border-b border-white/5 relative">
                  <h4 className="text-sm font-bold">Chat</h4>
-                 <Settings2 size={14} className="text-white/20" />
+                 {canControl && (
+                    <div className="relative">
+                       <button onClick={() => setShowChatSettings(!showChatSettings)} className="focus:outline-none p-1 hover:bg-white/5 rounded transition-colors active:scale-95">
+                          <Settings2 size={14} className="text-white/40 hover:text-white transition-colors" />
+                       </button>
+                       {showChatSettings && (
+                          <div className="absolute right-0 top-8 w-32 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl z-[100] p-1 animate-in slide-in-from-top-2">
+                             <button 
+                                onClick={() => {
+                                   socketRef.current.emit('clear-chat', { roomId });
+                                   setShowChatSettings(false);
+                                   toast.success('Chat cleared', {
+                                     style: { background: '#111', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }
+                                   });
+                                }} 
+                                className="w-full text-left px-3 py-2 rounded-md hover:bg-red-500/10 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors text-red-500/80"
+                             >
+                                <Trash2 size={12} /> Clear Chat
+                             </button>
+                          </div>
+                       )}
+                    </div>
+                 )}
               </div>
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                  {messages.length === 0 ? (

@@ -184,6 +184,20 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('clear-chat', async ({ roomId }) => {
+    try {
+      // Clear from DB
+      await Room.findOneAndUpdate(
+        { roomId },
+        { $set: { messages: [] } }
+      );
+      // Inform all users in the room
+      io.to(roomId).emit('chat-history', []);
+    } catch (err) {
+      console.error('Clear chat error:', err);
+    }
+  });
+
   socket.on('add-to-playlist', async ({ roomId, url }) => {
     try {
       // Basic validation
