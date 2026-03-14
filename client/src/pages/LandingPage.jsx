@@ -163,7 +163,7 @@ const LandingPage = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={handleGetStarted}
-                    className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all text-lg shadow-2xl shadow-orange-500/20"
+                    className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all duration-300 text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
                   >
                     <Plus fill="black" size={20} />
                     Create Room
