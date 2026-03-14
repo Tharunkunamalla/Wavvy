@@ -117,114 +117,172 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        {/* Left: Hero Content */}
-        <div className="space-y-10">
-          <div className="space-y-4">
-            <h1 className="text-7xl font-black leading-[1.1] tracking-tighter">
-              Watch Together, <br />
-              <span className="text-primary italic">Perfectly Synced</span>
-            </h1>
-            <p className="text-xl text-white/40 leading-relaxed max-w-lg font-medium">
-              Experience movies and shows with friends in perfect harmony.
-              Real-time sync, video calls, and instant chat—all in one place.
-            </p>
-          </div>
+      <main className={`flex-1 max-w-7xl w-full mx-auto p-8 ${!user ? "grid grid-cols-1 lg:grid-cols-2 gap-16 items-center" : "flex flex-col gap-10 mt-4"}`}>
+        {!user ? (
+          <>
+            {/* Left: Hero Content */}
+            <div className="space-y-10">
+              <div className="space-y-4">
+                <h1 className="text-7xl font-black leading-[1.1] tracking-tighter">
+                  Watch Together, <br />
+                  <span className="text-primary italic">Perfectly Synced</span>
+                </h1>
+                <p className="text-xl text-white/40 leading-relaxed max-w-lg font-medium">
+                  Experience movies and shows with friends in perfect harmony.
+                  Real-time sync, video calls, and instant chat—all in one place.
+                </p>
+              </div>
 
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={handleGetStarted}
-                className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all text-lg shadow-2xl shadow-white/10"
-              >
-                <Plus fill="black" size={20} />
-                Create Room
-              </button>
-              <div className="relative flex-1 max-w-sm">
-                <input
-                  type="text"
-                  placeholder="Paste Room ID to join..."
-                  className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-5 pl-12 pr-4 focus:outline-none focus:border-primary/50 transition-all text-sm font-bold h-full"
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                />
-                <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
-                  size={18}
-                />
-                {roomId.trim() && (
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <button
-                    onClick={handleJoinRoom}
-                    className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all"
+                    onClick={handleGetStarted}
+                    className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all text-lg shadow-2xl shadow-white/10"
                   >
-                    Join
+                    <Plus fill="black" size={20} />
+                    Create Room
                   </button>
-                )}
+                  <div className="relative flex-1 max-w-sm">
+                    <input
+                      type="text"
+                      placeholder="Paste Room ID to join..."
+                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-5 pl-12 pr-4 focus:outline-none focus:border-orange-500/50 transition-all text-sm font-bold h-full"
+                      value={roomId}
+                      onChange={(e) => setRoomId(e.target.value)}
+                    />
+                    <Search
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
+                      size={18}
+                    />
+                    {roomId.trim() && (
+                      <button
+                        onClick={handleJoinRoom}
+                        className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all"
+                      >
+                        Join
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-black text-white/20 tracking-[0.2em] uppercase">
+                  <Monitor size={14} />
+                  <span>Free Forever</span>
+                  <span className="w-1 h-1 bg-white/20 rounded-full mx-1"></span>
+                  <CreditCardIcon size={14} />
+                  <span>No Credit Card</span>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-black text-white/20 tracking-[0.2em] uppercase">
-              <Monitor size={14} />
-              <span>Free Forever</span>
-              <span className="w-1 h-1 bg-white/20 rounded-full mx-1"></span>
-              <CreditCardIcon size={14} />
-              <span>No Credit Card</span>
+
+            {/* Right: Feature Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <FeatureCard
+                icon={<Clock className="text-white" size={24} />}
+                title="Perfect Sync"
+                desc="Real-time synchronization keeps everyone watching at the exact same moment"
+              />
+              <FeatureCard
+                icon={<Users className="text-white" size={24} />}
+                title="Video Calls"
+                desc="See your friends' reactions in real-time with built-in video chat"
+              />
+              <FeatureCard
+                icon={<Monitor className="text-white" size={24} />}
+                title="Any Platform"
+                desc="YouTube, direct links, and more—watch from anywhere"
+              />
+              <FeatureCard
+                icon={<Play className="text-white" size={24} />}
+                title="Live Chat"
+                desc="Share reactions and jokes with instant messaging"
+              />
+            </div>
+          </>
+        ) : (
+          <div className="space-y-10">
+            {/* Welcome Text */}
+            <div className="space-y-1">
+              <h1 className="text-4xl font-bold tracking-tight">
+                Welcome back, {user.name}!
+              </h1>
+              <p className="text-white/70 font-medium">
+                Create a room or join one to start watching together
+              </p>
+            </div>
+
+            {/* Action Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+              {/* Create Room Card */}
+              <button
+                onClick={handleGetStarted}
+                className="bg-zinc-200 hover:bg-white text-black font-semibold min-h-[140px] rounded-[1.25rem] flex items-center justify-center gap-2 transition-colors text-lg"
+              >
+                <Plus size={20} />
+                Create New Room
+              </button>
+
+              {/* Join Room Card */}
+              <div className="bg-[#111] border border-white/5 rounded-[1.25rem] p-6 flex flex-col justify-center gap-3 min-h-[140px]">
+                <label className="text-sm font-medium text-white/70">
+                  Join with Room ID
+                </label>
+                <div className="flex gap-4">
+                  <input
+                    type="text"
+                    placeholder="Enter room ID"
+                    className="flex-1 bg-black border border-white/10 rounded-xl py-3 px-4 focus:outline-none focus:border-white/20 transition-all font-medium text-sm text-white"
+                    value={roomId}
+                    onChange={(e) => setRoomId(e.target.value)}
+                  />
+                  <button
+                    onClick={handleJoinRoom}
+                    disabled={!roomId.trim()}
+                    className="bg-zinc-600 hover:bg-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-xl transition-all text-sm"
+                  >
+                    Join Room
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Right: Feature Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <FeatureCard
-            icon={<Clock className="text-white" size={24} />}
-            title="Perfect Sync"
-            desc="Real-time synchronization keeps everyone watching at the exact same moment"
-          />
-          <FeatureCard
-            icon={<Users className="text-white" size={24} />}
-            title="Video Calls"
-            desc="See your friends' reactions in real-time with built-in video chat"
-          />
-          <FeatureCard
-            icon={<Monitor className="text-white" size={24} />}
-            title="Any Platform"
-            desc="YouTube, direct links, and more—watch from anywhere"
-          />
-          <FeatureCard
-            icon={<Play className="text-white" size={24} />}
-            title="Live Chat"
-            desc="Share reactions and jokes with instant messaging"
-          />
-        </div>
+        )}
       </main>
 
       {/* Recently Created Rooms Section */}
       {user && myRooms.length > 0 && (
         <section className="max-w-7xl w-full mx-auto px-8 pb-20">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-1 w-px bg-primary"></div>
-            <h2 className="text-2xl font-bold italic tracking-tighter">
+          <div className="flex items-center gap-2 mb-6">
+            <Video className="text-white" size={22} fill="none" />
+            <h2 className="text-xl font-bold tracking-tight">
               My Rooms
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {myRooms.map((room) => (
               <div
                 key={room.id}
                 onClick={() => navigate(`/room/${room.id}`)}
-                className="bg-zinc-900 shadow-2xl p-8 rounded-[2rem] border border-white/5 hover:border-primary/50 transition-all cursor-pointer group"
+                className="bg-[#111] p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-all cursor-pointer flex flex-col gap-4"
               >
-                <h4 className="font-black text-xl mb-2 group-hover:text-primary transition-colors">
+                <h4 className="font-bold text-lg text-white">
                   {room.name || "Untitled Room"}
                 </h4>
-                <div className="flex items-center justify-between text-xs font-medium text-white/20 uppercase tracking-widest">
-                  <div className="flex items-center gap-2">
-                    <Clock size={12} />
-                    <span>{new Date(room.createdAt).toLocaleDateString()}</span>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-xs text-white/50">
+                    <Clock size={14} />
+                    <span>
+                      Created{" "}
+                      {new Date(room.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
                   </div>
-                  <ArrowRight
-                    size={14}
-                    className="group-hover:translate-x-1 transition-transform"
-                  />
+                  <div className="flex items-center gap-2 text-xs text-white/50">
+                    <Video size={14} />
+                    <span>Video loaded</span>
+                  </div>
                 </div>
               </div>
             ))}
