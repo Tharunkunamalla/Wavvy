@@ -5,12 +5,9 @@ import {
   Plus,
   Search,
   Video,
-  Github,
   Clock,
   Monitor,
   Users,
-  ArrowRight,
-  CardSim,
   CreditCardIcon,
 } from "lucide-react";
 import {Link} from "react-router-dom";
