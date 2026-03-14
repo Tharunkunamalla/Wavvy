@@ -6,10 +6,30 @@ import {
   Send, Users, Video, Link as LinkIcon, LogOut, Play, Plus, 
   Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, 
   XCircle, Trash2, Copy, Check, Info, ChevronRight, SkipForward,
-  Settings2, MessageSquare, History, AlignLeft, Maximize2, RefreshCw, Repeat
+  Settings2, MessageSquare, History, AlignLeft, Maximize2, RefreshCw, Repeat, X
 } from 'lucide-react';
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+
+const PeerVideo = ({ stream, isLocal }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted={isLocal}
+      className="w-full h-full object-cover rounded-lg border border-white/10 shadow-lg"
+    />
+  );
+};
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -38,6 +58,15 @@ const RoomPage = () => {
   const [showMemberMenu, setShowMemberMenu] = useState(null);
   const [isQueueExpanded, setIsQueueExpanded] = useState(false);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
+  const [incomingCall, setIncomingCall] = useState(null);
+
+  // WebRTC State
+  const [isInCall, setIsInCall] = useState(false);
+  const [localStream, setLocalStream] = useState(null);
+  const [peers, setPeers] = useState({});
+  const peersRef = useRef({});
+  const localStreamRef = useRef(null);
+  const isInCallRef = useRef(false);
 
   useEffect(() => {
     if (!user) {
@@ -80,6 +109,10 @@ const RoomPage = () => {
        navigate('/');
     });
 
+    socketRef.current.on('incoming-video-call', ({ callerName }) => {
+       setIncomingCall(callerName);
+    });
+
     socketRef.current.on('sync-video-load', ({ url }) => {
       setVideoUrl(url);
     });
@@ -108,6 +141,82 @@ const RoomPage = () => {
         }
       }
       setTimeout(() => { isSyncing.current = false; }, 1000);
+    });
+
+    // WebRTC Signaling Listeners
+    const createPeerConnection = (partnerId) => {
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => {
+          pc.addTrack(track, localStreamRef.current);
+        });
+      }
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socketRef.current.emit('video-ice-candidate', {
+            target: partnerId,
+            caller: socketRef.current.id,
+            candidate: event.candidate
+          });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        setPeers(prev => ({
+          ...prev,
+          [partnerId]: event.streams[0]
+        }));
+      };
+
+      peersRef.current[partnerId] = pc;
+      return pc;
+    };
+
+    socketRef.current.on('user-joined-video', async ({ userId }) => {
+      if (!isInCallRef.current) return;
+      const pc = createPeerConnection(userId);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socketRef.current.emit('video-offer', { target: userId, caller: socketRef.current.id, sdp: offer });
+    });
+
+    socketRef.current.on('video-offer', async ({ caller, sdp }) => {
+      if (!isInCallRef.current) return;
+      const pc = createPeerConnection(caller);
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socketRef.current.emit('video-answer', { target: caller, caller: socketRef.current.id, sdp: answer });
+    });
+
+    socketRef.current.on('video-answer', async ({ caller, sdp }) => {
+      const pc = peersRef.current[caller];
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      }
+    });
+
+    socketRef.current.on('video-ice-candidate', async ({ caller, candidate }) => {
+      const pc = peersRef.current[caller];
+      if (pc) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    socketRef.current.on('user-left-video', ({ userId }) => {
+      if (peersRef.current[userId]) {
+        peersRef.current[userId].close();
+        delete peersRef.current[userId];
+      }
+      setPeers(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     });
 
     return () => {
@@ -276,6 +385,41 @@ const RoomPage = () => {
       // Also re-broadcast URL just in case someone is on a blank screen
       socketRef.current.emit('video-load', { roomId, url: videoUrl });
     }
+  };
+
+  const startVideoCall = async (isInitiator = false) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLocalStream(stream);
+      localStreamRef.current = stream;
+      setIsInCall(true);
+      isInCallRef.current = true;
+      setIncomingCall(null);
+      socketRef.current.emit('join-video-call', { roomId });
+      
+      if (isInitiator) {
+        socketRef.current.emit('start-video-call', { roomId, callerName: user.name });
+      }
+    } catch (err) {
+      console.error("Failed to get local stream", err);
+      alert("Microphone/Camera access required for video call.");
+    }
+  };
+
+  const endVideoCall = () => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+    setLocalStream(null);
+    localStreamRef.current = null;
+    setIsInCall(false);
+    isInCallRef.current = false;
+    
+    Object.values(peersRef.current).forEach(pc => pc.close());
+    peersRef.current = {};
+    setPeers({});
+    
+    socketRef.current.emit('leave-video-call', { roomId });
   };
 
   return (
@@ -639,9 +783,11 @@ const RoomPage = () => {
                  <div className="p-4 grid grid-cols-2 gap-2 border-t border-white/5 bg-black/40">
                     <button onClick={grantAll} className="py-2.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Grant All</button>
                     <button onClick={revokeAll} className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Revoke All</button>
-                    <button className="col-span-2 py-4 bg-primary hover:bg-primary/90 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all mt-2 active:scale-95 shadow-lg shadow-primary/30">
-                       <Video size={18} /> Start Video Call
-                    </button>
+                    {!isInCall && (
+                      <button onClick={() => startVideoCall(true)} className="col-span-2 py-4 bg-primary hover:bg-primary/90 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all mt-2 active:scale-95 shadow-lg shadow-primary/30">
+                         <Video size={18} /> Start Video Call
+                      </button>
+                    )}
                  </div>
               )}
            </div>

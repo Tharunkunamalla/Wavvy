@@ -311,10 +311,34 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('join-video-call', ({ roomId }) => {
+    socket.join(`${roomId}-video`);
+    socket.to(`${roomId}-video`).emit('user-joined-video', { userId: socket.id, userName: socket.data.name });
+  });
+
+  socket.on('video-offer', ({ target, caller, sdp }) => {
+    io.to(target).emit('video-offer', { caller, sdp });
+  });
+
+  socket.on('video-answer', ({ target, caller, sdp }) => {
+    io.to(target).emit('video-answer', { caller, sdp });
+  });
+
+  socket.on('video-ice-candidate', ({ target, candidate, caller }) => {
+    io.to(target).emit('video-ice-candidate', { candidate, caller });
+  });
+
+  socket.on('leave-video-call', ({ roomId }) => {
+    socket.leave(`${roomId}-video`);
+    socket.to(`${roomId}-video`).emit('user-left-video', { userId: socket.id });
+  });
+
   socket.on('disconnecting', async () => {
     const rooms = Array.from(socket.rooms);
     for (const roomId of rooms) {
-      if (roomId !== socket.id) {
+      if (roomId.endsWith('-video')) {
+        socket.to(roomId).emit('user-left-video', { userId: socket.id });
+      } else if (roomId !== socket.id) {
         setTimeout(async () => {
           const members = await getRoomMembers(roomId);
           io.to(roomId).emit('update-members', members);
