@@ -18,7 +18,28 @@ const ProtectedRoute = ({children}) => {
 function App() {
   return (
     <>
-    <Toaster position="top-right" reverseOrder={false} />
+    <Toaster
+  position="top-right"
+  toastOptions={{
+    style: {
+      background: "#18181b",
+      color: "#fff",
+      border: "1px solid #27272a"
+    },
+    success: {
+      style: {
+        border: "1px solid #f97316",
+        color: "#f97316"
+      }
+    },
+    error: {
+      style: {
+        border: "1px solid #ef4444",
+        color: "#ef4444"
+      }
+    }
+  }}
+/>
     <Router>
       <div className="min-h-screen bg-black overflow-x-hidden">
         <Routes>

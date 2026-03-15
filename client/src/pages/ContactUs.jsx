@@ -114,6 +114,8 @@ const Contact = () => {
           onSubmit={onSubmit}
           className="bg-black p-8 rounded-2xl border border-zinc-800 shadow-lg shadow-orange-500/20"
         >
+          <input type="hidden" name="from_name" value="Wavvy Contact Form" />
+          <input type="hidden" name="subject" value="New Message from Wavvy 🚀" />
 
           <div className="grid grid-cols-2 gap-4">
 
