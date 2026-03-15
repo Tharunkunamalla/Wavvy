@@ -65,12 +65,12 @@ const Contact = () => {
             className="bg-zinc-800 p-3 rounded-md outline-none mt-4 w-full h-28"
           />
 
-          <button className="w-full bg-gray-700 hover:bg-gray-600 mt-4 py-3 rounded-md">
+          <button className="w-full bg-orange-500  hover:bg-orange-600 mt-4 py-3 rounded-md">
             Send Message
           </button>
 
           <p className="text-gray-500 text-sm mt-3 text-center">
-            Or email directly at darrang48@gmail.com
+            Or email directly at tharunkunamalla7@gmail.com
           </p>
         </div>
       </div>
