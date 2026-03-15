@@ -1,32 +1,48 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import toast from "react-hot-toast";
 import FAQItem from "../components/FAQItem.jsx";
-import { Clock, Mail, Play } from "lucide-react";
+import { Clock, Mail, Play, Loader2 } from "lucide-react";
 
 const Contact = () => {
 
-  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const formRef = useRef(null);
 
   const onSubmit = async (event) => {
     event.preventDefault();
-    setResult("Sending...");
 
-    const formData = new FormData(event.target);
+    setLoading(true);
 
-    formData.append("access_key", "YOUR_WEB3FORMS_API_KEY");
+    const formData = new FormData(formRef.current);
+    formData.append("access_key", "2723b2e6-8e05-43c3-b81c-9583412ce099");
 
-    const response = await fetch("https://api.web3forms.com/submit", {
-      method: "POST",
-      body: formData
-    });
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formData
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (data.success) {
-      setResult("Message sent successfully!");
-      event.target.reset();
-    } else {
-      setResult("Something went wrong!");
+      if (data.success) {
+
+        toast.success("Message sent successfully!");
+
+        formRef.current.reset();   // resets form properly
+
+      } else {
+
+        toast.error(data.message || "Something went wrong!");
+
+      }
+
+    } catch (error) {
+
+      toast.error("Network error. Try again.");
+
     }
+
+    setLoading(false);
   };
 
   return (
@@ -34,7 +50,10 @@ const Contact = () => {
 
       {/* Navbar */}
       <div className="flex justify-between items-center px-10 py-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1
+          className="text-2xl font-bold flex items-center gap-2 cursor-pointer"
+          onClick={() => window.location.href = "/"}
+        >
           <Play className="text-orange-500" /> Wavvy
         </h1>
 
@@ -45,7 +64,6 @@ const Contact = () => {
           Back to Home
         </button>
       </div>
-
 
       {/* Hero */}
       <div className="text-center mt-10">
@@ -69,56 +87,33 @@ const Contact = () => {
         {/* LEFT SIDE */}
         <div className="flex flex-col gap-6">
 
-          {/* Email Card */}
           <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 shadow-lg shadow-orange-500/20">
-
             <Mail className="text-orange-500 mb-4" size={28} />
-
-            <h3 className="text-xl font-semibold mb-2">
-              Email us directly
-            </h3>
-
-            <p className="text-gray-400">
-              tharunkunamalla7@gmail.com
-            </p>
-
+            <h3 className="text-xl font-semibold mb-2">Email us directly</h3>
+            <p className="text-gray-400">tharunkunamalla7@gmail.com</p>
             <p className="text-gray-500 mt-3 text-sm">
               For bug reports, feature requests, or anything else.
             </p>
-
           </div>
 
-
-          {/* Response Card */}
           <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 shadow-lg shadow-orange-500/20">
-
             <Clock className="text-orange-500 mb-4" size={28} />
-
-            <h3 className="text-xl font-semibold mb-2">
-              Response time
-            </h3>
-
-            <p className="text-gray-400">
-              Usually within 24–48 hours
-            </p>
-
+            <h3 className="text-xl font-semibold mb-2">Response time</h3>
+            <p className="text-gray-400">Usually within 24–48 hours</p>
             <p className="text-gray-500 mt-3 text-sm">
               We're a small team but we read every message.
             </p>
-
           </div>
 
         </div>
 
 
-        {/* RIGHT SIDE FORM */}
+        {/* CONTACT FORM */}
         <form
+          ref={formRef}
           onSubmit={onSubmit}
           className="bg-black p-8 rounded-2xl border border-zinc-800 shadow-lg shadow-orange-500/20"
         >
-
-          <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_API_KEY" />
-          <input type="hidden" name="subject" value="New Message from Wavvy Contact Form" />
 
           <div className="grid grid-cols-2 gap-4">
 
@@ -139,13 +134,11 @@ const Contact = () => {
 
           </div>
 
-
           <input
             name="subject"
             placeholder="What's this about?"
             className="bg-zinc-800 p-3 rounded-md outline-none mt-4 w-full focus:border-orange-500 focus:border-2"
           />
-
 
           <textarea
             name="message"
@@ -154,28 +147,30 @@ const Contact = () => {
             className="bg-zinc-800 p-3 rounded-md outline-none mt-4 w-full h-28 resize-none focus:border-orange-500 focus:border-2"
           />
 
-
           <button
             type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 mt-4 py-3 rounded-md"
+            disabled={loading}
+            className="w-full bg-orange-500 hover:bg-orange-600 mt-4 py-3 rounded-md flex items-center justify-center gap-2"
           >
-            Send Message
-          </button>
 
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={18} />
+                Sending...
+              </>
+            ) : (
+              "Send Message"
+            )}
+
+          </button>
 
           <p className="text-gray-500 text-sm mt-3 text-center">
             Or email directly at tharunkunamalla7@gmail.com
           </p>
 
-
-          <span className="block text-center mt-3 text-gray-400">
-            {result}
-          </span>
-
         </form>
 
       </div>
-
 
       {/* FAQ */}
       <div className="max-w-4xl mx-auto mt-20 px-6 w-full">
@@ -184,35 +179,14 @@ const Contact = () => {
           Frequently Asked Questions
         </h2>
 
-        <FAQItem
-          question="Is Wavvy free to use?"
-          answer="Yes. Wavvy is completely free for watching videos with friends online."
-        />
-
-        <FAQItem
-          question="What video platforms are supported?"
-          answer="You can watch YouTube videos together using shared links."
-        />
-
-        <FAQItem
-          question="How many people can join a room?"
-          answer="There is no hard limit on room members."
-        />
-
-        <FAQItem
-          question="Why is my video out of sync?"
-          answer="Sync issues usually happen because of network delay."
-        />
-
-        <FAQItem
-          question="How do I report a bug?"
-          answer="You can send us a message using the contact form above."
-        />
+        <FAQItem question="Is Wavvy free to use?" answer="Yes. Wavvy is completely free for watching videos with friends online." />
+        <FAQItem question="What video platforms are supported?" answer="You can watch YouTube videos together using shared links." />
+        <FAQItem question="How many people can join a room?" answer="There is no hard limit on room members." />
+        <FAQItem question="Why is my video out of sync?" answer="Sync issues usually happen because of network delay." />
+        <FAQItem question="How do I report a bug?" answer="You can send us a message using the contact form above." />
 
       </div>
 
-
-      {/* Footer */}
       <footer className="text-center text-gray-500 mt-20 mb-6">
         © 2026 Wavvy. Watch together, wherever you are.
       </footer>

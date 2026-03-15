@@ -5,6 +5,7 @@ import RoomPage from "./pages/RoomPage";
 import LoginPage from "./pages/LoginPage";
 import About from "./pages/AboutUs";
 import Contact from "./pages/ContactUs";
+import { Toaster } from "react-hot-toast";
 
 const ProtectedRoute = ({children}) => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -16,6 +17,8 @@ const ProtectedRoute = ({children}) => {
 
 function App() {
   return (
+    <>
+    <Toaster position="top-right" reverseOrder={false} />
     <Router>
       <div className="min-h-screen bg-black overflow-x-hidden">
         <Routes>
@@ -34,6 +37,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+    </>
   );
 }
 
