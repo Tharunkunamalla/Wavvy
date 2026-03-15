@@ -4,6 +4,7 @@ import LandingPage from "./pages/LandingPage";
 import RoomPage from "./pages/RoomPage";
 import LoginPage from "./pages/LoginPage";
 import About from "./pages/AboutUs";
+import Contact from "./pages/ContactUs";
 
 const ProtectedRoute = ({children}) => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -20,6 +21,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/about?" element={<About />} />
+          <Route path="/contact" element={<Contact/>}/>
           <Route path="/login?" element={<LoginPage />} />
           <Route
             path="/room/:roomId"

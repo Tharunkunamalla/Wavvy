@@ -352,13 +352,13 @@ const LandingPage = () => {
       <footer className="py-12 px-8 flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto border-t border-white/5">
         <div className="flex gap-8 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
           <span className="hover:text-white transition-colors cursor-pointer">
-            <Link to="/about?" className="hover:text-white transition-colors">
+            <Link to="/about" className="hover:text-white transition-colors">
               About Us
             </Link>
           </span>
           <span className="hover:text-white transition-colors cursor-pointer">
             <Link
-              to="/contact?"
+              to="/contact"
               className="hover:text-white hover:-translate-x-1 transition-all duration-300 cursor-pointer"
             >
               Contact Us
