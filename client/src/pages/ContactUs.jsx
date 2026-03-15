@@ -1,5 +1,5 @@
 import FAQItem from "../components/FAQItem.jsx";
-import { Play } from "lucide-react";
+import { Clock, Mail, Play } from "lucide-react";
 const Contact = () => {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
@@ -29,51 +29,85 @@ const Contact = () => {
       </div>
 
       {/* Contact Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-10 mt-16 max-w-6xl mx-auto w-full">
-        {/* Email Card */}
-        <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800">
-          <h3 className="text-xl font-semibold mb-2">Email us directly</h3>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-10 mt-16 max-w-6xl mx-auto w-full">
 
-          <p className="text-gray-400">tharunkunamalla7@gmail.com</p>
+  {/* LEFT SIDE */}
+  <div className="flex flex-col gap-6">
 
-          <p className="text-gray-500 mt-3 text-sm">
-            For bug reports, feature requests, or anything else.
-          </p>
-        </div>
+    {/* Email Card */}
+    <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 shadow-lg shadow-orange-500/20">
+      <div className="text-2xl mb-3"><Mail/> </div>
 
-        {/* Contact Form */}
-        <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800">
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              placeholder="Your name"
-              className="bg-zinc-800 p-3 rounded-md outline-none"
-            />
+      <h3 className="text-xl font-semibold mb-2">
+        Email us directly
+      </h3>
 
-            <input
-              placeholder="you@example.com"
-              className="bg-zinc-800 p-3 rounded-md outline-none"
-            />
-          </div>
+      <p className="text-gray-400">
+        tharunkunamalla7@gmail.com
+      </p>
 
-          <input
-            placeholder="What's this about?"
-            className="bg-zinc-800 p-3 rounded-md outline-none mt-4 w-full"
-          />
+      <p className="text-gray-500 mt-3 text-sm">
+        For bug reports, feature requests, or anything else.
+      </p>
+    </div>
 
-          <textarea
-            placeholder="Tell us what's on your mind..."
-            className="bg-zinc-800 p-3 rounded-md outline-none mt-4 w-full h-28"
-          />
 
-          <button className="w-full bg-orange-500  hover:bg-orange-600 mt-4 py-3 rounded-md">
-            Send Message
-          </button>
+    {/* Response Time Card */}
+    <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 shadow-lg shadow-orange-500/20">
+      <div className="text-2xl mb-3"><Clock/></div>
 
-          <p className="text-gray-500 text-sm mt-3 text-center">
-            Or email directly at tharunkunamalla7@gmail.com
-          </p>
-        </div>
-      </div>
+      <h3 className="text-xl font-semibold mb-2">
+        Response time
+      </h3>
+
+      <p className="text-gray-400">
+        Usually within 24–48 hours
+      </p>
+
+      <p className="text-gray-500 mt-3 text-sm">
+        We're a small team but we read every message.
+      </p>
+    </div>
+
+  </div>
+
+
+  {/* RIGHT SIDE (CONTACT FORM) */}
+  <div className="bg-black p-8 rounded-2xl border border-zinc-800 shadow-lg shadow-orange-500/20">
+
+    <div className="grid grid-cols-2 gap-4">
+      <input
+        placeholder="Your name"
+        className="bg-zinc-800 h-11 p-3 rounded-md outline-none focus:border-orange-500 focus:border-2 resize-none"
+      />
+
+      <input
+        placeholder="you@example.com"
+        className="bg-zinc-800 h-11 p-3 rounded-md outline-none focus:border-orange-500 focus:border-2 resize-none"
+      />
+    </div>
+
+    <input
+      placeholder="What's this about?"
+      className="bg-zinc-800 p-3 rounded-md outline-none mt-4 w-full focus:border-orange-500 focus:border-2 resize-none"
+    />
+
+    <textarea
+      placeholder="Tell us what's on your mind..."
+      className="bg-zinc-800 p-3 rounded-md outline-none mt-4 w-full h-28 resize-none focus:border-orange-500 focus:border-2"
+    />
+
+    <button className="w-full bg-orange-500 hover:bg-orange-600 mt-4 py-3 rounded-md">
+      Send Message
+    </button>
+
+    <p className="text-gray-500 text-sm mt-3 text-center">
+      Or email directly at tharunkunamalla7@gmail.com
+    </p>
+
+  </div>
+
+</div>
 
       {/* FAQ Section */}
       <div className="max-w-4xl mx-auto mt-20 px-6 w-full">
