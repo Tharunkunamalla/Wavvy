@@ -116,9 +116,9 @@ const Contact = () => {
         >
           <input type="hidden" name="from_name" value="Wavvy Contact Form" />
           <input type="hidden" name="subject" value="New Message from Wavvy 🚀" />
+          <input type="hidden" name="greeting" value="Hello Wavvy 👋" />
 
           <div className="grid grid-cols-2 gap-4">
-
             <input
               name="name"
               required
