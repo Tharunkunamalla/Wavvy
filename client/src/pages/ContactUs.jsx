@@ -1,12 +1,15 @@
 import FAQItem from "../components/FAQItem.jsx";
+import { Play } from "lucide-react";
 const Contact = () => {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Navbar */}
       <div className="flex justify-between items-center px-10 py-6">
-        <h1 className="text-3xl font-bold">Wavvy</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Play className="text-orange-500" /> Wavvy
+        </h1>
 
-        <button className="border border-gray-600 px-4 py-2 rounded-full hover:bg-gray-800" onClick={()=> window.location.href="/" }>
+        <button className="border border-orange-600 px-4 py-2 rounded-full hover:bg-orange-600" onClick={()=> window.location.href="/" }>
           Back to Home
         </button>
       </div>

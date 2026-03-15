@@ -10,8 +10,8 @@ const About = () => {
             <Play className="text-orange-500" /> Wavvy
           </h1>
 
-          <button
-            className="border border-gray-300 px-5 py-2 rounded-full hover:bg-gray-900"
+          <button 
+            className="border border-orange-600 px-5 py-2 rounded-full hover:bg-orange-600"
             onClick={() => (window.location.href = "/")}
           >
             Back to Home
