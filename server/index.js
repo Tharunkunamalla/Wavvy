@@ -385,9 +385,6 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = 5001;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/wavvy';
-
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
