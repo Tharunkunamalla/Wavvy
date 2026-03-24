@@ -9,7 +9,7 @@ import {
   Monitor,
   Users,
   CreditCardIcon,
-  Trash2
+  Trash2,
 } from "lucide-react";
 import {Link} from "react-router-dom";
 
@@ -51,17 +51,19 @@ const LandingPage = () => {
   const handleJoinRoom = async (e) => {
     e.preventDefault();
     if (!user) return navigate("/login");
-    
+
     const tid = roomId.trim();
     if (!tid) return;
 
     try {
       setJoinError("");
       setIsJoining(true);
-      
-      const res = await fetch(`http://localhost:5001/api/check-room?roomId=${tid}`);
+
+      const res = await fetch(
+        `http://localhost:5001/api/check-room?roomId=${tid}`,
+      );
       const data = await res.json();
-      
+
       if (!data.exists) {
         setJoinError("Room not found. Please check the ID.");
         setIsJoining(false);
@@ -93,7 +95,7 @@ const LandingPage = () => {
 
   const handleDeleteRoom = (e, roomIdToDelete) => {
     e.stopPropagation();
-    const updatedRooms = myRooms.filter(room => room.id !== roomIdToDelete);
+    const updatedRooms = myRooms.filter((room) => room.id !== roomIdToDelete);
     setMyRooms(updatedRooms);
     localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updatedRooms));
   };
@@ -103,7 +105,10 @@ const LandingPage = () => {
       {/* Top Navigation */}
       <nav className="h-20 flex items-center justify-between px-12 z-50">
         <div className="flex items-center gap-2 cursor-pointer group">
-          <Play className="text-primary fill-current drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] group-hover:scale-110 transition-transform" size={28} />
+          <Play
+            className="text-primary fill-current drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] group-hover:scale-110 transition-transform"
+            size={28}
+          />
           <span className="text-3xl font-brand tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-300 drop-shadow-xl mt-1">
             Wavvy
           </span>
@@ -134,7 +139,7 @@ const LandingPage = () => {
                   localStorage.removeItem("user");
                   window.location.reload();
                 }}
-                className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-red-500 transition-colors"
+                className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-red-500 transition-colors cursor-pointer"
               >
                 Logout
               </button>
@@ -143,7 +148,9 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      <main className={`flex-1 max-w-7xl w-full mx-auto p-8 ${!user ? "grid grid-cols-1 lg:grid-cols-2 gap-16 items-center" : "flex flex-col gap-10 mt-4"}`}>
+      <main
+        className={`flex-1 max-w-7xl w-full mx-auto p-8 ${!user ? "grid grid-cols-1 lg:grid-cols-2 gap-16 items-center" : "flex flex-col gap-10 mt-4"}`}
+      >
         {!user ? (
           <>
             {/* Left: Hero Content */}
@@ -155,7 +162,8 @@ const LandingPage = () => {
                 </h1>
                 <p className="text-xl text-white/40 leading-relaxed max-w-lg font-medium">
                   Experience movies and shows with friends in perfect harmony.
-                  Real-time sync, video calls, and instant chat—all in one place.
+                  Real-time sync, video calls, and instant chat—all in one
+                  place.
                 </p>
               </div>
 
@@ -163,7 +171,7 @@ const LandingPage = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={handleGetStarted}
-                    className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all duration-300 text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
+                    className="bg-white text-black font-black px-10 py-5 rounded-2xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all duration-300 text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] cursor-pointer"
                   >
                     <Plus fill="black" size={20} />
                     Create Room
@@ -173,8 +181,7 @@ const LandingPage = () => {
                       <input
                         type="text"
                         placeholder="Paste Room ID to join..."
-                       className={`w-full bg-zinc-900 border ${joinError ? 'border-red-500/50 focus:border-red-500' : 'border-white/5 focus:border-orange-500'} rounded-2xl py-5 pl-12 pr-4 focus:outline-none transition-all text-sm font-bold h-full`}
-
+                        className={`w-full bg-zinc-900 border ${joinError ? "border-red-500/50 focus:border-red-500" : "border-white/5 focus:border-orange-500"} rounded-2xl py-5 pl-12 pr-4 focus:outline-none transition-all text-sm font-bold h-full`}
                         value={roomId}
                         onChange={(e) => {
                           setRoomId(e.target.value);
@@ -245,10 +252,14 @@ const LandingPage = () => {
             {/* Welcome Text */}
             <div className="space-y-2">
               <h1 className="text-5xl font-brand tracking-wide drop-shadow-lg flex items-center gap-3">
-                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-300 drop-shadow-xl">{user.name}</span>!
+                Welcome back,{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-300 drop-shadow-xl">
+                  {user.name}
+                </span>
+                !
               </h1>
               <p className="text-white/60 font-medium tracking-wide uppercase text-sm mt-2">
-                 Create a room or join one to start watching together
+                Create a room or join one to start watching together
               </p>
             </div>
 
@@ -257,7 +268,7 @@ const LandingPage = () => {
               {/* Create Room Card */}
               <button
                 onClick={handleGetStarted}
-                className="bg-zinc-200 hover:bg-white text-black font-semibold min-h-[140px] rounded-[1.25rem] flex items-center justify-center gap-2 transition-colors text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
+                className="bg-zinc-200 hover:bg-white text-black font-semibold min-h-[140px] rounded-[1.25rem] flex items-center justify-center gap-2 transition-colors text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] cursor-pointer"
               >
                 <Plus size={20} />
                 Create New Room
@@ -267,14 +278,16 @@ const LandingPage = () => {
               <div className="bg-[#111] border border-white/5 rounded-[1.25rem] p-6 flex flex-col justify-center gap-3 min-h-[140px]">
                 <label className="text-sm font-medium text-white/70 flex justify-between">
                   <span>Join with Room ID</span>
-                  {joinError && <span className="text-red-500 text-xs">{joinError}</span>}
+                  {joinError && (
+                    <span className="text-red-500 text-xs">{joinError}</span>
+                  )}
                 </label>
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-4">
                     <input
                       type="text"
                       placeholder="Enter room ID"
-                      className={`flex-1 bg-black border ${joinError ? 'border-red-500/50 focus:border-red-500' : 'border-white/5 focus:border-orange-500'} rounded-xl py-3 px-4 focus:outline-none transition-all font-medium text-sm text-white`}
+                      className={`flex-1 bg-black border ${joinError ? "border-red-500/50 focus:border-red-500" : "border-white/5 focus:border-orange-500"} rounded-xl py-3 px-4 focus:outline-none transition-all font-medium text-sm text-white`}
                       value={roomId}
                       onChange={(e) => {
                         setRoomId(e.target.value);
@@ -284,7 +297,7 @@ const LandingPage = () => {
                     <button
                       onClick={handleJoinRoom}
                       disabled={!roomId.trim() || isJoining}
-                      className="bg-zinc-600 hover:bg-zinc-500 flex items-center justify-center min-w-[100px] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-4 py-3 rounded-xl transition-all text-sm"
+                      className="bg-zinc-600 hover:bg-zinc-500 flex items-center justify-center min-w-[100px] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-4 py-3 rounded-xl transition-all text-sm cursor-pointer"
                     >
                       {isJoining ? (
                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -305,9 +318,7 @@ const LandingPage = () => {
         <section className="max-w-7xl w-full mx-auto px-8 pb-20">
           <div className="flex items-center gap-2 mb-6">
             <Video className="text-white" size={22} fill="none" />
-            <h2 className="text-xl font-bold tracking-tight">
-              My Rooms
-            </h2>
+            <h2 className="text-xl font-bold tracking-tight">My Rooms</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {myRooms.map((room) => (
@@ -378,7 +389,7 @@ const LandingPage = () => {
               onClick={() => setShowCreateModal(false)}
               className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors"
             >
-              <Plus className="rotate-45" size={32} />
+              <Plus className="rotate-45 cursor-pointer" size={32} />
             </button>
             <h2 className="text-4xl font-black tracking-tight italic mb-2">
               Create New Room
@@ -399,13 +410,13 @@ const LandingPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-5 rounded-2xl transition-all"
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-5 rounded-2xl transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-[2] bg-primary text-black font-black py-5 rounded-2xl transition-all shadow-xl shadow-primary/20"
+                  className="flex-[2] bg-primary text-black font-black py-5 rounded-2xl transition-all shadow-xl shadow-primary/20 cursor-pointer flex items-center justify-center gap-3 hover:bg-primary/90"
                 >
                   Create Room
                 </button>
