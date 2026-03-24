@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import ReactPlayer from 'react-player';
 import toast, { Toaster } from 'react-hot-toast';
+import { BACKEND_URL } from '../lib/env';
 import { 
   Send, Users, Video, Link as LinkIcon, LogOut, Play, Plus, 
   Clock, Monitor, Crown, Shield, ShieldOff, MoreVertical, 
@@ -10,7 +11,7 @@ import {
   Settings2, MessageSquare, History, AlignLeft, Maximize2, RefreshCw, Repeat, X, AlertTriangle
 } from 'lucide-react';
 
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+const SOCKET_URL = BACKEND_URL;
 
 const PeerVideo = ({ stream, isLocal }) => {
   const videoRef = useRef(null);

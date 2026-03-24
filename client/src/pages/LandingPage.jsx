@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import {Link} from "react-router-dom";
+import {API_BASE_URL} from "../lib/env";
 
 const LandingPage = () => {
   const [roomId, setRoomId] = useState("");
@@ -59,9 +60,10 @@ const LandingPage = () => {
       setJoinError("");
       setIsJoining(true);
 
-      const res = await fetch(
-        `http://localhost:5001/api/check-room?roomId=${tid}`,
-      );
+      const res = await fetch(`${API_BASE_URL}/check-room?roomId=${tid}`);
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
       const data = await res.json();
 
       if (!data.exists) {
