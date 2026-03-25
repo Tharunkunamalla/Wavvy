@@ -11,7 +11,7 @@ const About = () => {
           </h1>
 
           <button 
-            className="border border-orange-600 px-5 py-2 rounded-full hover:bg-orange-600"
+            className="border border-orange-600 px-5 py-2 rounded-full hover:bg-orange-600 cursor-pointer"
             onClick={() => (window.location.href = "/")}
           >
             Back to Home
