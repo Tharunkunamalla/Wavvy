@@ -5,6 +5,7 @@ import {Clock, Mail, Play, Loader2} from "lucide-react";
 
 const Contact = () => {
   const [loading, setLoading] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const formRef = useRef(null);
 
   const onSubmit = async (event) => {
@@ -164,26 +165,36 @@ const Contact = () => {
           Frequently Asked Questions
         </h2>
 
-        <FAQItem
-          question="Is Wavvy free to use?"
-          answer="Yes. Wavvy is completely free for watching videos with friends online."
-        />
-        <FAQItem
-          question="What video platforms are supported?"
-          answer="You can watch YouTube videos together using shared links."
-        />
-        <FAQItem
-          question="How many people can join a room?"
-          answer="There is no hard limit on room members."
-        />
-        <FAQItem
-          question="Why is my video out of sync?"
-          answer="Sync issues usually happen because of network delay."
-        />
-        <FAQItem
-          question="How do I report a bug?"
-          answer="You can send us a message using the contact form above."
-        />
+        {[
+          {
+            question: "Is Wavvy free to use?",
+            answer: "Yes. Wavvy is completely free for watching videos with friends online."
+          },
+          {
+            question: "What video platforms are supported?",
+            answer: "You can watch YouTube videos together using shared links."
+          },
+          {
+            question: "How many people can join a room?",
+            answer: "There is no hard limit on room members."
+          },
+          {
+            question: "Why is my video out of sync?",
+            answer: "Sync issues usually happen because of network delay."
+          },
+          {
+            question: "How do I report a bug?",
+            answer: "You can send us a message using the contact form above."
+          }
+        ].map((faq, index) => (
+          <FAQItem
+            key={index}
+            question={faq.question}
+            answer={faq.answer}
+            isOpen={openFaqIndex === index}
+            onToggle={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+          />
+        ))}
       </div>
 
       <footer className="text-center text-gray-500 mt-20 mb-6">
