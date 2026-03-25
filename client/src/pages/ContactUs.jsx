@@ -87,9 +87,9 @@ const Contact = () => {
           <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 shadow-lg shadow-orange-500/20">
             <Clock className="text-orange-500 mb-4" size={28} />
             <h3 className="text-xl font-semibold mb-2">Response time</h3>
-            <p className="text-gray-400">Usually within 24–48 hours</p>
+            <p className="text-gray-400">Max: 24–48 hours</p>
             <p className="text-gray-500 mt-3 text-sm">
-              We're a small team but we read every message.
+              We'll get back to you as soon as possible.
             </p>
           </div>
         </div>
@@ -98,8 +98,11 @@ const Contact = () => {
         <form
           ref={formRef}
           onSubmit={onSubmit}
-          className="bg-black p-8 rounded-2xl border border-zinc-800 shadow-lg shadow-orange-500/20"
+          className="relative bg-zinc-900/40 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl border border-zinc-800 shadow-[0_0_40px_-10px_rgba(249,115,22,0.1)] flex flex-col gap-5 overflow-hidden"
         >
+          {/* Subtle inside glow */}
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-orange-500/15 blur-[80px] rounded-full pointer-events-none" />
+
           <input type="hidden" name="from_name" value="Wavvy Contact Form" />
           <input
             type="hidden"
@@ -108,12 +111,12 @@ const Contact = () => {
           />
           <input type="hidden" name="greeting" value="Hello Wavvy 👋" />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 z-10 w-full">
             <input
               name="name"
               required
               placeholder="Your name"
-              className="bg-black p-3 rounded-md outline-none focus:border-orange-500 focus:border-2"
+              className="w-full bg-black/60 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 transition-all font-medium text-white placeholder:text-zinc-600"
             />
 
             <input
@@ -121,31 +124,31 @@ const Contact = () => {
               type="email"
               required
               placeholder="you@example.com"
-              className="bg-black p-3 rounded-md outline-none focus:border-orange-500 focus:border-2"
+              className="w-full bg-black/60 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 transition-all font-medium text-white placeholder:text-zinc-600"
             />
           </div>
 
           <input
             name="subject"
             placeholder="What's this about?"
-            className="bg-black p-3 rounded-md outline-none mt-4 w-full focus:border-orange-500 focus:border-2"
+            className="w-full bg-black/60 border border-zinc-800 p-4 rounded-xl outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 transition-all font-medium text-white placeholder:text-zinc-600 z-10"
           />
 
           <textarea
             name="message"
             required
             placeholder="Tell us what's on your mind..."
-            className="bg-black p-3 rounded-md outline-none mt-4 w-full h-28 resize-none focus:border-orange-500 focus:border-2"
+            className="w-full bg-black/60 border border-zinc-800 p-4 rounded-xl outline-none h-32 resize-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 transition-all font-medium text-white placeholder:text-zinc-600 z-10"
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 mt-4 py-3 rounded-md flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-black shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)] transition-all duration-300 hover:-translate-y-1 active:scale-[0.98] py-4 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer z-10 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
-                <Loader2 className="animate-spin" size={18} />
+                <Loader2 className="animate-spin" size={20} />
                 Sending...
               </>
             ) : (
@@ -153,8 +156,8 @@ const Contact = () => {
             )}
           </button>
 
-          <p className="text-gray-500 text-sm mt-3 text-center">
-            Or email directly at tharunkunamalla7@gmail.com
+          <p className="text-zinc-500/80 text-xs mt-3 text-center uppercase tracking-widest font-bold z-10">
+            Or email directly at <span className="text-orange-500/80 hover:text-orange-400 transition-colors cursor-pointer">tharunkunamalla7@gmail.com</span>
           </p>
         </form>
       </div>
