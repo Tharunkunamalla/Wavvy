@@ -119,12 +119,28 @@ const LandingPage = () => {
           {!user ? (
             <button
               onClick={() => navigate("/login")}
-              className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-full text-sm font-bold border border-white/10 transition-all cursor-pointer hover:scale-105 active:scale-95 "
+              className="relative inline-flex overflow-hidden rounded-full p-[1px] transition-all hover:scale-105 active:scale-95 cursor-pointer group"
             >
-              Sign In
+              <span 
+                className="absolute inset-[-1000%] animate-spin opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ 
+                  animationDuration: '2.5s',
+                  backgroundImage: 'conic-gradient(from 90deg at 50% 50%, transparent 0%, #f97316 50%, transparent 100%)' 
+                }} 
+              />
+              <span className="relative inline-flex h-full w-full items-center justify-center rounded-full bg-zinc-950 px-6 py-2 text-sm font-bold text-white border border-white/10 group-hover:border-transparent transition-all group-hover:bg-zinc-900">
+                Sign In
+              </span>
             </button>
           ) : (
             <div className="flex items-center gap-4 bg-white/5 p-2 pr-4 rounded-full border border-white/5">
+              <span 
+                className="absolute inset-[-1000%] animate-spin opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ 
+                  animationDuration: '2.5s',
+                  backgroundImage: 'conic-gradient(from 90deg at 50% 50%, transparent 0%, #f97316 50%, transparent 100%)' 
+                }} 
+              />
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black shadow-lg shadow-primary/20">
                 {user.name.charAt(0).toUpperCase()}
               </div>
