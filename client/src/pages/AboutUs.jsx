@@ -95,13 +95,21 @@ const About = () => {
 
         {/* Mission */}
         <section className="max-w-5xl mx-auto mt-28 px-6">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
-            <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
-
-            <p className="text-gray-400 text-lg">
-              To make shared experiences feel truly shared — regardless of how
-              many miles separate you.
-            </p>
+          <div className="relative rounded-2xl p-[1px] group overflow-hidden transition-all duration-700 hover:shadow-[0_0_60px_-15px_rgba(249,115,22,0.5)] cursor-default hover:-translate-y-1">
+            <span 
+              className="absolute inset-[-1000%] animate-[spin_5s_linear_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+              style={{ backgroundImage: 'conic-gradient(from 90deg at 50% 50%, transparent 0%, #f97316 50%, transparent 100%)' }} 
+            />
+            <div className="relative bg-zinc-950 rounded-2xl p-12 text-center border border-zinc-800 group-hover:border-transparent transition-all duration-700 z-10 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-t from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+              <h2 className="text-3xl font-bold mb-4 relative z-20 text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-orange-200 transition-all duration-500">
+                Our Mission
+              </h2>
+              <p className="text-gray-400 text-lg relative z-20 group-hover:text-gray-300 transition-colors duration-500">
+                To make shared experiences feel truly shared — regardless of how
+                many miles separate you.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -112,29 +120,42 @@ const About = () => {
           </h2>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 text-center">
-              <Zap className="text-orange-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold">Simplicity</h3>
-              <p className="text-gray-400 mt-3 text-sm">
-                No plugins. No downloads. Paste a link and watch instantly.
-              </p>
-            </div>
-
-            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 text-center">
-              <Shield className="text-orange-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold">Accessibility</h3>
-              <p className="text-gray-400 mt-3 text-sm">
-                Watching together should be free for everyone.
-              </p>
-            </div>
-
-            <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 text-center">
-              <Heart className="text-orange-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold">Community</h3>
-              <p className="text-gray-400 mt-3 text-sm">
-                Built for friends, families, and fandoms.
-              </p>
-            </div>
+            {[
+              {
+                icon: <Zap className="text-orange-500 mx-auto mb-4 w-8 h-8 group-hover:scale-125 group-hover:drop-shadow-[0_0_15px_rgba(249,115,22,0.8)] transition-all duration-500" />,
+                title: "Simplicity",
+                desc: "No plugins. No downloads. Paste a link and watch instantly."
+              },
+              {
+                icon: <Shield className="text-orange-500 mx-auto mb-4 w-8 h-8 group-hover:scale-125 group-hover:drop-shadow-[0_0_15px_rgba(249,115,22,0.8)] transition-all duration-500" />,
+                title: "Accessibility",
+                desc: "Watching together should be free for everyone."
+              },
+              {
+                icon: <Heart className="text-orange-500 mx-auto mb-4 w-8 h-8 group-hover:scale-125 group-hover:drop-shadow-[0_0_15px_rgba(249,115,22,0.8)] transition-all duration-500" />,
+                title: "Community",
+                desc: "Built for friends, families, and fandoms."
+              }
+            ].map((value, idx) => (
+              <div key={idx} className="relative rounded-xl p-[1px] group overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_40px_-10px_rgba(249,115,22,0.4)] cursor-default">
+                <span 
+                  className="absolute inset-[-1000%] animate-[spin_3s_linear_infinite] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                  style={{ backgroundImage: 'conic-gradient(from 90deg at 50% 50%, transparent 0%, #f97316 50%, transparent 100%)' }} 
+                />
+                <div className="relative h-full bg-zinc-950 p-8 rounded-xl border border-zinc-800 group-hover:border-transparent transition-all duration-500 z-10 text-center overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                  <div className="relative z-20">
+                    {value.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold relative z-20 text-white group-hover:text-orange-400 transition-colors duration-300">
+                    {value.title}
+                  </h3>
+                  <p className="text-gray-400 mt-3 text-sm relative z-20 group-hover:text-gray-300 transition-colors duration-300">
+                    {value.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -143,7 +164,7 @@ const About = () => {
           <h2 className="text-3xl font-bold mb-6">Ready to watch together?</h2>
 
           <button
-            className="bg-orange-500 hover:bg-orange-600 px-8 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto"
+            className="bg-orange-500 hover:bg-orange-600 px-8 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto "
             onClick={() => (window.location.href = "/")}
           >
             <Play size={18} /> Start Watching Free
