@@ -43,14 +43,13 @@ const Contact = () => {
       {/* Navbar */}
       <div className="flex justify-between items-center px-10 py-6">
         <h1
-          className="text-2xl font-bold flex items-center gap-2 cursor-pointer"
-          onClick={() => (window.location.href = "/")}
+          className="text-2xl font-bold flex items-center gap-2"
         >
           <Play className="text-orange-500" /> Wavvy
         </h1>
 
         <button
-          className="border border-orange-600 px-5 py-2 rounded-full hover:bg-orange-600"
+          className="border border-orange-600 px-5 py-2 rounded-full hover:bg-orange-600 cursor-pointer"
           onClick={() => (window.location.href = "/")}
         >
           Back to Home
