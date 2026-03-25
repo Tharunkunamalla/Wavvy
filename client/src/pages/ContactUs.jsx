@@ -168,11 +168,11 @@ const Contact = () => {
         {[
           {
             question: "Is Wavvy free to use?",
-            answer: "Yes. Wavvy is completely free for watching videos with friends online."
+            answer: "Yeah, Wavvy is completely free for watching videos with friends online."
           },
           {
             question: "What video platforms are supported?",
-            answer: "You can watch YouTube videos together using shared links. And we are working on adding more platforms soon."
+            answer: "Basically, you can watch YouTube videos together using shared links. And we are working on adding more platforms soon."
           },
           {
             question: "How many people can join a room?",
@@ -180,11 +180,11 @@ const Contact = () => {
           },
           {
             question: "Why is my video out of sync?",
-            answer: "Sync issues usually happen because of network delay. Try refreshing the page or ask everyone to join again."
+            answer: "So, sync issues usually happen because of network delay. Try refreshing the page or ask everyone to join again."
           },
           {
             question: "How do I report a bug?",
-            answer: "You can send us a message using the contact form above. We'll get back to you as soon as possible."
+            answer: "Yeah, you can send us a message using the contact form above. We'll get back to you as soon as possible."
           }
         ].map((faq, index) => (
           <FAQItem
