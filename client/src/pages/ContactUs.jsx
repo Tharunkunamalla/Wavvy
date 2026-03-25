@@ -172,19 +172,19 @@ const Contact = () => {
           },
           {
             question: "What video platforms are supported?",
-            answer: "You can watch YouTube videos together using shared links."
+            answer: "You can watch YouTube videos together using shared links. And we are working on adding more platforms soon."
           },
           {
             question: "How many people can join a room?",
-            answer: "There is no hard limit on room members."
+            answer: <>There is no hard limit on room members. But we recommend keeping it under <span className="font-bold text-white">10</span> for a better experience.</>
           },
           {
             question: "Why is my video out of sync?",
-            answer: "Sync issues usually happen because of network delay."
+            answer: "Sync issues usually happen because of network delay. Try refreshing the page or ask everyone to join again."
           },
           {
             question: "How do I report a bug?",
-            answer: "You can send us a message using the contact form above."
+            answer: "You can send us a message using the contact form above. We'll get back to you as soon as possible."
           }
         ].map((faq, index) => (
           <FAQItem
