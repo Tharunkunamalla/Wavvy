@@ -164,7 +164,7 @@ const About = () => {
           <h2 className="text-3xl font-bold mb-6">Ready to watch together?</h2>
 
           <button
-            className="bg-orange-500 hover:bg-orange-600 px-8 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto "
+            className="bg-orange-500 hover:bg-orange-600 px-8 py-3 rounded-lg font-semibold flex items-center gap-2 mx-auto cursor-pointer"
             onClick={() => (window.location.href = "/")}
           >
             <Play size={18} /> Start Watching Free
