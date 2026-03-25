@@ -198,7 +198,7 @@ const LandingPage = () => {
                         <button
                           onClick={handleJoinRoom}
                           disabled={isJoining}
-                          className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          className="absolute right-2 top-2 bottom-2 bg-primary text-black font-black px-6 rounded-xl text-xs uppercase tracking-widest hover:bg-primary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                         >
                           {isJoining ? (
                             <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
