@@ -133,34 +133,36 @@ const LandingPage = () => {
               </span>
             </button>
           ) : (
-            <div className="flex items-center gap-4 bg-white/5 p-2 pr-4 rounded-full border border-white/5">
+            <div className="relative inline-flex overflow-hidden rounded-full p-[1px] group">
               <span 
-                className="absolute inset-[-1000%] animate-spin opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                className="absolute inset-[-1000%] animate-spin opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                 style={{ 
                   animationDuration: '2.5s',
                   backgroundImage: 'conic-gradient(from 90deg at 50% 50%, transparent 0%, #f97316 50%, transparent 100%)' 
                 }} 
               />
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black shadow-lg shadow-primary/20">
-                {user.name.charAt(0).toUpperCase()}
+              <div className="relative flex items-center gap-4 bg-zinc-950 p-2 pr-4 rounded-full border border-white/5 group-hover:border-transparent transition-all group-hover:bg-zinc-900 h-full w-full">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black font-black shadow-lg shadow-primary/20">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-white/80 text-xs font-black uppercase tracking-widest leading-none">
+                    Hello,
+                  </span>
+                  <span className="text-white text-sm font-black italic">
+                    {user.name}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("user");
+                    window.location.reload();
+                  }}
+                  className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-red-500 transition-colors cursor-pointer relative z-10"
+                >
+                  Logout
+                </button>
               </div>
-              <div className="flex flex-col">
-                <span className="text-white/80 text-xs font-black uppercase tracking-widest leading-none">
-                  Hello,
-                </span>
-                <span className="text-white text-sm font-black italic">
-                  {user.name}
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  localStorage.removeItem("user");
-                  window.location.reload();
-                }}
-                className="ml-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 hover:text-red-500 transition-colors cursor-pointer"
-              >
-                Logout
-              </button>
             </div>
           )}
         </div>
