@@ -53,34 +53,43 @@ const About = () => {
 
           {/* Feature cards */}
           <div className="grid grid-cols-2 gap-6">
-            <div className="bg-zinc-900 p-6 rounded-xl border border-zince-800">
-              <h3 className="text-lg font-semibold mb-4">
-                Real-time Synchronization
-              </h3>
-              <p className="text-gray-400">
-                Everyone Watches at the Same Time, No Matter Where They Are.
-              </p>
-            </div>
-            <div className="bg-zinc-900 p-6 rounded-xl border border-zince-800">
-              <h3 className="text-lg font-semibold mb-4">Rooms for All</h3>
-              <p className="text-gray-400">
-                Invite anyone instantly to your video watching session.
-              </p>
-            </div>
-            <div className="bg-zinc-900 p-6 rounded-xl border border-zince-800">
-              <h3 className="text-lg font-semibold mb-4">
-                Any Video, Anywhere
-              </h3>
-              <p className="text-gray-400">
-                Works with YouTube, Vimeo, and any video URL you can think of.
-              </p>
-            </div>
-            <div className="bg-zinc-900 p-6 rounded-xl border border-zince-800">
-              <h3 className="text-lg font-semibold mb-4">Free Forever</h3>
-              <p className="text-gray-400">
-                No hidden fees, no subscriptions. Just pure video watching fun.
-              </p>
-            </div>
+            {[
+              {
+                title: "Real-time Synchronization",
+                desc: "Everyone Watches at the Same Time, No Matter Where They Are."
+              },
+              {
+                title: "Rooms for All",
+                desc: "Invite anyone instantly to your video watching session."
+              },
+              {
+                title: "Any Video, Anywhere",
+                desc: "Works with YouTube, Vimeo, and any video URL you can think of."
+              },
+              {
+                title: "Free Forever",
+                desc: "No hidden fees, no subscriptions. Just pure video watching fun."
+              }
+            ].map((feature, idx) => (
+              <div key={idx} className="relative rounded-xl p-[1px] group overflow-hidden transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_40px_-10px_rgba(249,115,22,0.4)] cursor-default">
+                <span 
+                  className="absolute inset-[-1000%] animate-spin opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                  style={{ 
+                    animationDuration: '3s',
+                    backgroundImage: 'conic-gradient(from 90deg at 50% 50%, transparent 0%, #f97316 50%, transparent 100%)' 
+                  }} 
+                />
+                <div className="relative h-full bg-zinc-950 p-6 rounded-xl border border-zinc-800 group-hover:border-transparent transition-all duration-500 z-10 flex flex-col overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                  <h3 className="text-lg font-semibold mb-3 text-white group-hover:text-orange-400 transition-colors duration-300 relative z-20">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300 relative z-20 leading-relaxed">
+                    {feature.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
