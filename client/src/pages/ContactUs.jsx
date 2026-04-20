@@ -39,12 +39,12 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="relative min-h-screen overflow-hidden isolate bg-black text-orange">
+      <div className="pointer-events-none absolute -top-28 -left-28 h-80 w-80 rounded-full bg-orange-500/30 blur-3xl opacity-80" />
+      <div className="pointer-events-none absolute -top-28 -right-28 h-80 w-80 rounded-full bg-orange-400/25 blur-3xl opacity-80" />
       {/* Navbar */}
       <div className="flex justify-between items-center px-10 py-6">
-        <h1
-          className="text-2xl font-bold flex items-center gap-2"
-        >
+        <h1 className="text-2xl font-bold flex items-center gap-2">
           <Play className="text-orange-500" /> Wavvy
         </h1>
 
@@ -156,7 +156,15 @@ const Contact = () => {
           </button>
 
           <p className="text-zinc-500/80 text-xs mt-3 text-center uppercase tracking-widest font-bold z-10">
-            Or email directly at <span className="text-orange-500/80 hover:text-orange-400 transition-colors cursor-pointer"><a href="mailto:tharunkunamalla7@gmail.com" className="text-gray-950 dark:text-white hover:text-secondary-500 dark:hover:text-secondary-400 transition-colors duration-300" >tharunkunamalla7@gmail.com</a></span>
+            Or email directly at{" "}
+            <span className="text-orange-500/80 hover:text-orange-400 transition-colors cursor-pointer">
+              <a
+                href="mailto:tharunkunamalla7@gmail.com"
+                className="text-gray-950 dark:text-white hover:text-secondary-500 dark:hover:text-secondary-400 transition-colors duration-300"
+              >
+                tharunkunamalla7@gmail.com
+              </a>
+            </span>
           </p>
         </form>
       </div>
@@ -170,31 +178,43 @@ const Contact = () => {
         {[
           {
             question: "Is Wavvy free to use?",
-            answer: "Yeah, Wavvy is completely free for watching videos with friends online."
+            answer:
+              "Yeah, Wavvy is completely free for watching videos with friends online.",
           },
           {
             question: "What video platforms are supported?",
-            answer: "Basically, you can watch YouTube videos together using shared links. And we are working on adding more platforms soon."
+            answer:
+              "Basically, you can watch YouTube videos together using shared links. And we are working on adding more platforms soon.",
           },
           {
             question: "How many people can join a room?",
-            answer: <>There is no hard limit on room members. But we recommend keeping it under <span className="font-bold text-white">10</span> for a better experience.</>
+            answer: (
+              <>
+                There is no hard limit on room members. But we recommend keeping
+                it under <span className="font-bold text-white">10</span> for a
+                better experience.
+              </>
+            ),
           },
           {
             question: "Why is my video out of sync?",
-            answer: "So, sync issues usually happen because of network delay. Try refreshing the page or ask everyone to join again."
+            answer:
+              "So, sync issues usually happen because of network delay. Try refreshing the page or ask everyone to join again.",
           },
           {
             question: "How do I report a bug?",
-            answer: "Yeah, you can send us a message using the contact form above. We'll get back to you as soon as possible."
-          }
+            answer:
+              "Yeah, you can send us a message using the contact form above. We'll get back to you as soon as possible.",
+          },
         ].map((faq, index) => (
           <FAQItem
             key={index}
             question={faq.question}
             answer={faq.answer}
             isOpen={openFaqIndex === index}
-            onToggle={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+            onToggle={() =>
+              setOpenFaqIndex(openFaqIndex === index ? null : index)
+            }
           />
         ))}
       </div>
