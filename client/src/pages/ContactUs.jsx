@@ -156,7 +156,7 @@ const Contact = () => {
           </button>
 
           <p className="text-zinc-500/80 text-xs mt-3 text-center uppercase tracking-widest font-bold z-10">
-            Or email directly at <span className="text-orange-500/80 hover:text-orange-400 transition-colors cursor-pointer">tharunkunamalla7@gmail.com</span>
+            Or email directly at <span className="text-orange-500/80 hover:text-orange-400 transition-colors cursor-pointer"><a href="mailto:tharunkunamalla7@gmail.com" className="text-gray-950 dark:text-white hover:text-secondary-500 dark:hover:text-secondary-400 transition-colors duration-300" >tharunkunamalla7@gmail.com</a></span>
           </p>
         </form>
       </div>
