@@ -5,7 +5,7 @@ const getDefaultBackendUrl = () => {
 };
 
 export const BACKEND_URL = trimTrailingSlash(
-  import.meta.env.VITE_BACKEND_URL || getDefaultBackendUrl(),
+  import.meta.env.VITE_BACKEND_URL || "https://wavvyy.onrender.com",
 );
 
 export const API_BASE_URL = `${BACKEND_URL}/api`;

@@ -219,7 +219,7 @@ const Contact = () => {
         ))}
       </div>
 
-      <footer className="textcenter text-gray-500 mt-20 mb-6">
+      <footer className="text-center text-gray-500 mt-20 mb-6">
         © 2026 Wavvy. Watch together, wherever you are.
       </footer>
     </div>
