@@ -417,10 +417,19 @@ io.on("connection", (socket) => {
     }
   });
 });
+// Start server immediately so Render health checks pass
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log("Attempting to connect to MongoDB...");
+});
+
 mongoose
   .connect(MONGODB_URI)
   .then(() => {
-    console.log("Connected to MongoDB");
-    server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    console.log("✅ Successfully connected to MongoDB Atlas");
   })
-  .catch((err) => console.error(err));
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:");
+    console.error(err.message);
+    console.log("Check if your IP is whitelisted (0.0.0.0/0) in MongoDB Atlas.");
+  });
