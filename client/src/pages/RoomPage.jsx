@@ -119,10 +119,20 @@ const RoomPage = () => {
       );
     }
 
-    socketRef.current = io(SOCKET_URL);
+    // Initialize socket with websocket transport for better production reliability
+    socketRef.current = io(SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      reconnectionAttempts: 5,
+    });
 
     socketRef.current.on("connect", () => {
+      console.log("Socket connected:", socketRef.current.id);
       socketRef.current.emit("join-room", {roomId, user});
+    });
+
+    socketRef.current.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+      toast.error("Connection lost. Retrying...", { id: "socket-error" });
     });
 
     socketRef.current.on("receive-message", (msg) => {
@@ -686,7 +696,6 @@ const RoomPage = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
-      <Toaster />
       {/* Navbar Section */}
       <nav className="h-14 flex items-center justify-between px-6 bg-[#0a0a0a] border-b border-white/5 z-50">
         <div className="flex items-center gap-6">
@@ -1004,10 +1013,13 @@ const RoomPage = () => {
                 NOW PLAYING
               </span>
               <span className="text-[11px] text-white/80 truncate flex-1 ml-2 font-medium">
-                YouTube ·{" "}
-                {videoUrl
-                  ? videoUrl.split("v=")[1]?.substring(0, 11) + "..."
-                  : "None"}
+                {videoUrl ? (
+                  <>
+                    YouTube · <span className="text-white">{videoUrl.includes('v=') ? videoUrl.split('v=')[1]?.substring(0, 11) : 'Link'}...</span>
+                  </>
+                ) : (
+                  "Waiting for video..."
+                )}
               </span>
             </div>
 
