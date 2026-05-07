@@ -1,10 +1,7 @@
 const trimTrailingSlash = (value) => value.replace(/\/$/, "");
 
 const getDefaultBackendUrl = () => {
-  if (import.meta.env.PROD && typeof window !== "undefined") {
-    return window.location.origin;
-  }
-  return "http://localhost:5001";
+  return "http://localhost:3001";
 };
 
 export const BACKEND_URL = trimTrailingSlash(

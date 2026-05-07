@@ -12,13 +12,18 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const PORT = process.env.PORT || 3001;
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "*",
+    methods: ["GET", "POST"],
+  }),
+);
 app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: process.env.FRONTEND_URL || "*",
     methods: ["GET", "POST"],
   },
 });
