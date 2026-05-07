@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "install-client": "npm install --prefix client",
+    "build-client": "npm run build --prefix client"
+  },
   "dependencies": {
     "react-player": "^3.4.0"
   }
