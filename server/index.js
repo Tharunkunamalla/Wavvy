@@ -26,6 +26,10 @@ const io = new Server(server, {
     origin: process.env.FRONTEND_URL || "*",
     methods: ["GET", "POST"],
   },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  connectTimeout: 45000,
+  allowEIO3: true
 });
 
 // API endpoint to check if room exists

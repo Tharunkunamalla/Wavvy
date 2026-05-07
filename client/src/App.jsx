@@ -8,11 +8,18 @@ import Contact from "./pages/ContactUs";
 import { Toaster } from "react-hot-toast";
 
 const ProtectedRoute = ({children}) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) {
+  try {
+    const userStr = localStorage.getItem("user");
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (!user) {
+      return <LoginPage />;
+    }
+    return children;
+  } catch (error) {
+    console.error("Auth error:", error);
+    localStorage.removeItem("user"); // Clear corrupted data
     return <LoginPage />;
   }
-  return children;
 };
 
 function App() {
