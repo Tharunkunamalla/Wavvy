@@ -119,20 +119,27 @@ const RoomPage = () => {
       );
     }
 
-    // Initialize socket with websocket transport for better production reliability
+    // More aggressive socket initialization for production
     socketRef.current = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
-      reconnectionAttempts: 5,
+      transports: ["websocket"],
+      upgrade: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      timeout: 20000,
     });
 
     socketRef.current.on("connect", () => {
-      console.log("Socket connected:", socketRef.current.id);
+      console.log("🚀 Socket connected successfully:", socketRef.current.id);
       socketRef.current.emit("join-room", {roomId, user});
     });
 
     socketRef.current.on("connect_error", (err) => {
-      console.error("Socket connection error:", err.message);
-      toast.error("Connection lost. Retrying...", { id: "socket-error" });
+      console.error("❌ Socket Connection Error:", err.message);
+      // Only show toast if it's a persistent issue
+      if (socketRef.current?.active === false) {
+         toast.error("Connecting to server...", { id: "socket-status" });
+      }
     });
 
     socketRef.current.on("receive-message", (msg) => {
