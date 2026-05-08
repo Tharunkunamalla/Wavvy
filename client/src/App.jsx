@@ -1,5 +1,4 @@
-import React from "react";
-import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
+import {BrowserRouter as Router, Routes, Route, Navigate, useLocation} from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import RoomPage from "./pages/RoomPage";
 import LoginPage from "./pages/LoginPage";
@@ -8,17 +7,18 @@ import Contact from "./pages/ContactUs";
 import { Toaster } from "react-hot-toast";
 
 const ProtectedRoute = ({children}) => {
+  const location = useLocation();
   try {
     const userStr = localStorage.getItem("user");
     const user = userStr ? JSON.parse(userStr) : null;
     if (!user) {
-      return <LoginPage />;
+      return <Navigate to="/login" state={{ from: location.pathname }} replace />;
     }
     return children;
   } catch (error) {
     console.error("Auth error:", error);
-    localStorage.removeItem("user"); // Clear corrupted data
-    return <LoginPage />;
+    localStorage.removeItem("user");
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 };
 
