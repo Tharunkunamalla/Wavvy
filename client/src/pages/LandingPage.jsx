@@ -10,6 +10,9 @@ import {
   Users,
   CreditCardIcon,
   Trash2,
+  Zap,
+  Activity,
+  Info,
 } from "lucide-react";
 import {Link} from "react-router-dom";
 import {API_BASE_URL} from "../lib/env";
@@ -21,6 +24,7 @@ const LandingPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const [isServerWaking, setIsServerWaking] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -60,7 +64,13 @@ const LandingPage = () => {
       setJoinError("");
       setIsJoining(true);
 
+      const wakeTimer = setTimeout(() => {
+        setIsServerWaking(true);
+      }, 2500);
+
       const res = await fetch(`${API_BASE_URL}/check-room?roomId=${tid}`);
+      clearTimeout(wakeTimer);
+      setIsServerWaking(false);
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
@@ -85,6 +95,7 @@ const LandingPage = () => {
       navigate(`/room/${tid}`);
     } catch (err) {
       console.error("Failed to check room:", err);
+      setIsServerWaking(false);
       setJoinError("Failed to join room. Please try again.");
       setIsJoining(false);
     }
@@ -167,6 +178,28 @@ const LandingPage = () => {
           )}
         </div>
       </nav>
+
+      {/* Server Status Notification */}
+      {isServerWaking && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-500 w-full max-w-md px-6">
+          <div className="bg-zinc-900/90 backdrop-blur-xl border border-primary/20 rounded-2xl p-4 shadow-2xl flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 animate-pulse">
+              <Zap className="text-primary" size={20} />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-black text-white italic tracking-tight">Waking up the server...</p>
+              <p className="text-[10px] text-white/40 font-medium leading-relaxed mt-1">
+                Render is spinning up our backend. This usually takes 30-50 seconds. Thanks for waiting!
+              </p>
+              <div className="flex gap-1 mt-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main
         className={`flex-1 max-w-7xl w-full mx-auto p-8 ${!user ? "grid grid-cols-1 lg:grid-cols-2 gap-16 items-center" : "flex flex-col gap-10 mt-4"}`}

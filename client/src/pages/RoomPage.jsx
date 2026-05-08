@@ -34,6 +34,10 @@ import {
   Repeat,
   X,
   AlertTriangle,
+  Zap,
+  Activity,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 const SOCKET_URL = BACKEND_URL;
@@ -98,6 +102,11 @@ const RoomPage = () => {
   const localStreamRef = useRef(null);
   const isInCallRef = useRef(false);
 
+  // Connection State
+  const [isConnected, setIsConnected] = useState(false);
+  const [isWakingUp, setIsWakingUp] = useState(false);
+  const wakingTimeoutRef = useRef(null);
+
   useEffect(() => {
     if (!user) {
       navigate("/login", {state: {from: `/room/${roomId}`}});
@@ -131,14 +140,40 @@ const RoomPage = () => {
 
     socketRef.current.on("connect", () => {
       console.log("🚀 Socket connected successfully:", socketRef.current.id);
+      setIsConnected(true);
+      setIsWakingUp(false);
+      if (wakingTimeoutRef.current) clearTimeout(wakingTimeoutRef.current);
+      
+      toast.success("Connected to server!", { 
+        id: "socket-status",
+        icon: '⚡',
+        duration: 3000,
+        style: {
+          background: "#111",
+          color: "#f97316",
+          border: "1px solid rgba(249,115,22,0.2)",
+        }
+      });
       socketRef.current.emit("join-room", {roomId, user});
+    });
+
+    socketRef.current.on("disconnect", () => {
+      setIsConnected(false);
+      // Start a timeout to show waking up if it stays disconnected
+      wakingTimeoutRef.current = setTimeout(() => {
+        setIsWakingUp(true);
+      }, 3000);
     });
 
     socketRef.current.on("connect_error", (err) => {
       console.error("❌ Socket Connection Error:", err.message);
-      // Only show toast if it's a persistent issue
-      if (socketRef.current?.active === false) {
-         toast.error("Connecting to server...", { id: "socket-status" });
+      setIsConnected(false);
+      
+      // If we haven't connected yet, or it's been a while, show the waking up UI
+      if (!isWakingUp && !wakingTimeoutRef.current) {
+        wakingTimeoutRef.current = setTimeout(() => {
+          setIsWakingUp(true);
+        }, 2000);
       }
     });
 
@@ -413,6 +448,7 @@ const RoomPage = () => {
     });
 
     return () => {
+      if (wakingTimeoutRef.current) clearTimeout(wakingTimeoutRef.current);
       socketRef.current?.disconnect();
     };
   }, [roomId]);
@@ -763,6 +799,17 @@ const RoomPage = () => {
             </span>
           </div>
           <div className="w-px h-5 bg-white/10 mx-1"></div>
+          
+          {/* Server Status Pill */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${isConnected ? 'bg-green-500/5 border-green-500/20' : 'bg-yellow-500/5 border-yellow-500/20'} transition-colors`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-pulse'}`}></div>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${isConnected ? 'text-green-500/80' : 'text-yellow-500/80'}`}>
+              {isConnected ? 'Online' : 'Reconnecting'}
+            </span>
+          </div>
+
+          <div className="w-px h-5 bg-white/10 mx-1"></div>
+          
           <button
             onClick={() => navigate("/")}
             className="text-xs font-bold uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors flex items-center gap-2"
@@ -771,6 +818,65 @@ const RoomPage = () => {
           </button>
         </div>
       </nav>
+
+      {/* Server Waking Up Overlay */}
+      {isWakingUp && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-8"></div>
+            <Zap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary animate-pulse" size={32} />
+          </div>
+          
+          <h2 className="text-4xl font-black italic tracking-tighter mb-4 text-white">
+            Waking up <span className="text-primary">Wavvy</span>
+          </h2>
+          
+          <div className="max-w-md space-y-4">
+            <p className="text-white/60 font-medium leading-relaxed">
+              Our servers take a few seconds to warm up after a period of inactivity. 
+              We'll have your room ready in just a moment!
+            </p>
+            
+            <div className="flex items-center justify-center gap-3 py-4">
+              <div className="flex gap-1">
+                {[1, 2, 3].map((i) => (
+                  <div 
+                    key={i} 
+                    className="w-2 h-2 bg-primary rounded-full animate-bounce" 
+                    style={{ animationDelay: `${i * 0.2}s` }}
+                  />
+                ))}
+              </div>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-primary/60">
+                Establishing Connection...
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-start gap-4 text-left">
+              <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center shrink-0">
+                <Info className="text-orange-500" size={20} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white/90 mb-1">Did you know?</p>
+                <p className="text-[10px] text-white/40 leading-relaxed font-medium">
+                  We use eco-friendly hosting that "sleeps" when not in use to save energy. 
+                  Thanks for your patience!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isConnected && !isWakingUp && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="bg-[#111] border border-white/10 rounded-full px-6 py-3 flex items-center gap-3 shadow-2xl backdrop-blur-xl">
+             <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
+             <span className="text-xs font-black uppercase tracking-widest text-white/80">Connecting to server...</span>
+             <Activity className="text-white/20 animate-pulse" size={14} />
+           </div>
+        </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         {/* Main Content: Video and Video Tools */}
