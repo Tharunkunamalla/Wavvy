@@ -205,15 +205,24 @@ const About = () => {
                   <ul className="space-y-3 relative z-20 text-gray-300">
                     <li className="flex items-start gap-3">
                       <span className="text-orange-500 mt-1">•</span>
-                      <span><strong>Sleep:</strong> After 5 minutes of inactivity, our backend enters sleep mode on Render's free tier</span>
+                      <span>
+                        <strong>Sleep:</strong> After 5 minutes of inactivity,
+                        our backend enters sleep mode on Render's free tier
+                      </span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-orange-500 mt-1">•</span>
-                      <span><strong>Wake-up Time:</strong> First request triggers wake-up (usually 30-90 seconds)</span>
+                      <span>
+                        <strong>Wake-up Time:</strong> First request triggers
+                        wake-up (usually 30-90 seconds)
+                      </span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-orange-500 mt-1">•</span>
-                      <span><strong>Be Patient:</strong> Initial connection might take time — that's just the backend waking up!</span>
+                      <span>
+                        <strong>Be Patient:</strong> Initial connection might
+                        take time — that's just the backend waking up!
+                      </span>
                     </li>
                   </ul>
                 </div>
@@ -237,15 +246,24 @@ const About = () => {
                   <ul className="space-y-3 relative z-20 text-gray-300">
                     <li className="flex items-start gap-3">
                       <span className="text-orange-500 mt-1">•</span>
-                      <span><strong>Overload Protection:</strong> During peak hours, response times may increase</span>
+                      <span>
+                        <strong>Overload Protection:</strong> During peak hours,
+                        response times may increase
+                      </span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-orange-500 mt-1">•</span>
-                      <span><strong>Free Tier Limits:</strong> Backend has resource constraints on Render's free plan</span>
+                      <span>
+                        <strong>Free Tier Limits:</strong> Backend has resource
+                        constraints on Render's free plan
+                      </span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-orange-500 mt-1">•</span>
-                      <span><strong>Enjoy & Be Patient:</strong> We're working on scaling! Your patience helps us grow</span>
+                      <span>
+                        <strong>Enjoy & Be Patient:</strong> We're working on
+                        scaling! Your patience helps us grow
+                      </span>
                     </li>
                   </ul>
                 </div>
@@ -254,7 +272,9 @@ const About = () => {
 
             <div className="mt-8 p-6 rounded-lg border border-orange-500/30 bg-orange-500/5 relative z-20">
               <p className="text-center text-gray-300 text-sm">
-                💡 <strong>Pro Tip:</strong> Create a room and invite friends — keeping the connection active prevents sleep mode. Everyone benefits from continuous availability!
+                💡 <strong>Pro Tip:</strong> Create a room and invite friends —
+                keeping the connection active prevents sleep mode. Everyone
+                benefits from continuous availability!
               </p>
             </div>
           </section>
