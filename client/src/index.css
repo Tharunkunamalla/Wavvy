@@ -119,6 +119,7 @@ body {
     transform: translateY(-300px) scale(0.9) translateX(-20px);
     opacity: 0;
   }
+  
 }
 
 .reaction-bubble {
