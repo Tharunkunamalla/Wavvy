@@ -49,9 +49,7 @@ const About = () => {
               </p>
               <p className="text-gray-400 leading-relaxed">
                 {" "}
-                Our team of passionate developers and designers came together to
-                create a platform that would solve this problem once and for
-                all.{" "}
+                I hope you enjoy it as much as I enjoyed building it!
               </p>
             </div>
 
