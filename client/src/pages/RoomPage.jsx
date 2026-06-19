@@ -1171,19 +1171,6 @@ const RoomPage = () => {
                   ))}
                 </div>
 
-                {/* Floating Reaction Control Dock */}
-                <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-40 shadow-xl opacity-40 hover:opacity-100 transition-opacity duration-300">
-                  {["❤️", "😂", "🎉", "😮", "😢", "👍"].map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => sendReaction(emoji)}
-                      className="text-lg hover:scale-130 active:scale-95 transition-transform duration-200 cursor-pointer p-1"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-
                 {!hasInteracted && videoUrl && (
                   <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 backdrop-blur-sm">
                     <button
@@ -1210,6 +1197,34 @@ const RoomPage = () => {
               </div>
             )}
           </div>
+
+          {/* Sleek Emoji Reactions Bar */}
+          {videoUrl && (
+            <div className="flex justify-center items-center gap-4 bg-[#141414] border border-white/5 py-2.5 px-6 rounded-xl shadow-lg relative overflow-hidden group">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="flex items-center gap-2">
+                <Smile size={14} className="text-white/40 group-hover:text-primary transition-colors" />
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-white/40">
+                  Live Reactions
+                </span>
+              </div>
+              
+              <div className="w-px h-4 bg-white/10" />
+              
+              <div className="flex items-center gap-3">
+                {["❤️", "😂", "🎉", "😮", "😢", "👍"].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => sendReaction(emoji)}
+                    className="text-2xl hover:scale-130 active:scale-95 transition-transform duration-200 cursor-pointer p-1"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Native WebRTC Video Call Grid */}
           {isInCall && (
