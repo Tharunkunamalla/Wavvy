@@ -38,6 +38,10 @@ import {
   Activity,
   Wifi,
   WifiOff,
+  Mic,
+  MicOff,
+  Headphones,
+  Smile,
 } from "lucide-react";
 
 const SOCKET_URL = BACKEND_URL;
@@ -60,6 +64,18 @@ const PeerVideo = ({stream, isLocal}) => {
       className="w-full h-full object-cover rounded-lg border border-white/10 shadow-lg"
     />
   );
+};
+
+const VoiceAudio = ({stream}) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (audioRef.current && stream) {
+      audioRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  return <audio ref={audioRef} autoPlay />;
 };
 
 const RoomPage = () => {
@@ -101,6 +117,19 @@ const RoomPage = () => {
   const peersRef = useRef({});
   const localStreamRef = useRef(null);
   const isInCallRef = useRef(false);
+
+  // Voice Chat WebRTC State
+  const [isInVoice, setIsInVoice] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [voiceMembers, setVoiceMembers] = useState([]);
+  const [voicePeers, setVoicePeers] = useState({});
+  const voicePeersRef = useRef({});
+  const localVoiceStreamRef = useRef(null);
+  const [localVoiceStream, setLocalVoiceStream] = useState(null);
+  const isInVoiceRef = useRef(false);
+
+  // Live reactions state
+  const [reactions, setReactions] = useState([]);
 
   // Connection State
   const [isConnected, setIsConnected] = useState(false);

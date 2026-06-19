@@ -345,11 +345,55 @@ export const socketHandler = (io) => {
       socket.to(`${roomId}-video`).emit("user-left-video", {userId: socket.id});
     });
 
+    // --- Live Emoji Reactions ---
+    socket.on("send-reaction", ({roomId, emoji, sender}) => {
+      io.to(roomId).emit("receive-reaction", {
+        emoji,
+        sender,
+        id: `${socket.id}-${Date.now()}-${Math.random()}`,
+      });
+    });
+
+    // --- Voice Chat WebRTC Signaling ---
+    socket.on("join-voice-chat", ({roomId}) => {
+      socket.join(`${roomId}-voice`);
+      socket.to(`${roomId}-voice`).emit("user-joined-voice", {
+        userId: socket.id,
+        userName: socket.data.name || "Guest",
+      });
+    });
+
+    socket.on("voice-offer", ({target, caller, sdp}) => {
+      io.to(target).emit("voice-offer", {caller, sdp});
+    });
+
+    socket.on("voice-answer", ({target, caller, sdp}) => {
+      io.to(target).emit("voice-answer", {caller, sdp});
+    });
+
+    socket.on("voice-ice-candidate", ({target, candidate, caller}) => {
+      io.to(target).emit("voice-ice-candidate", {candidate, caller});
+    });
+
+    socket.on("voice-mute-toggle", ({roomId, muted}) => {
+      socket.to(`${roomId}-voice`).emit("user-voice-mute-updated", {
+        userId: socket.id,
+        muted,
+      });
+    });
+
+    socket.on("leave-voice-chat", ({roomId}) => {
+      socket.leave(`${roomId}-voice`);
+      socket.to(`${roomId}-voice`).emit("user-left-voice", {userId: socket.id});
+    });
+
     socket.on("disconnecting", async () => {
       const rooms = Array.from(socket.rooms);
       for (const roomId of rooms) {
         if (roomId.endsWith("-video")) {
           socket.to(roomId).emit("user-left-video", {userId: socket.id});
+        } else if (roomId.endsWith("-voice")) {
+          socket.to(roomId).emit("user-left-voice", {userId: socket.id});
         } else if (roomId !== socket.id) {
           setTimeout(async () => {
             const members = await getRoomMembers(io, roomId);
