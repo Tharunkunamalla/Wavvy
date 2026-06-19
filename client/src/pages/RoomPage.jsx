@@ -476,9 +476,132 @@ const RoomPage = () => {
       });
     });
 
+    // --- Live Reactions Listener ---
+    socketRef.current.on("receive-reaction", ({emoji, sender, id}) => {
+      setReactions((prev) => [
+        ...prev,
+        {
+          id,
+          emoji,
+          sender,
+          left: Math.random() * 80 + 10,
+        },
+      ]);
+    });
+
+    // --- Voice Signaling Listeners ---
+    const createVoicePeerConnection = (partnerId, partnerName) => {
+      const pc = new RTCPeerConnection({
+        iceServers: [{urls: "stun:stun.l.google.com:19302"}],
+      });
+
+      if (localVoiceStreamRef.current) {
+        localVoiceStreamRef.current.getTracks().forEach((track) => {
+          pc.addTrack(track, localVoiceStreamRef.current);
+        });
+      }
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socketRef.current.emit("voice-ice-candidate", {
+            target: partnerId,
+            caller: socketRef.current.id,
+            candidate: event.candidate,
+          });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        console.log(`[Voice] Received track from ${partnerName}`);
+        setVoicePeers((prev) => ({
+          ...prev,
+          [partnerId]: event.streams[0],
+        }));
+      };
+
+      voicePeersRef.current[partnerId] = pc;
+      return pc;
+    };
+
+    socketRef.current.on("user-joined-voice", async ({userId, userName}) => {
+      if (!isInVoiceRef.current) return;
+      console.log(`[Voice] User joined voice: ${userName} (${userId})`);
+      
+      const pc = createVoicePeerConnection(userId, userName);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      socketRef.current.emit("voice-offer", {
+        target: userId,
+        caller: socketRef.current.id,
+        sdp: offer,
+      });
+
+      setVoiceMembers((prev) => {
+        if (prev.find((v) => v.userId === userId)) return prev;
+        return [...prev, {userId, userName, muted: false}];
+      });
+    });
+
+    socketRef.current.on("voice-offer", async ({caller, sdp}) => {
+      if (!isInVoiceRef.current) return;
+      console.log(`[Voice] Received voice offer from ${caller}`);
+      const partnerName = members.find((m) => m.id === caller)?.name || "Guest";
+      
+      const pc = createVoicePeerConnection(caller, partnerName);
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      
+      socketRef.current.emit("voice-answer", {
+        target: caller,
+        caller: socketRef.current.id,
+        sdp: answer,
+      });
+    });
+
+    socketRef.current.on("voice-answer", async ({caller, sdp}) => {
+      console.log(`[Voice] Received voice answer from ${caller}`);
+      const pc = voicePeersRef.current[caller];
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      }
+    });
+
+    socketRef.current.on("voice-ice-candidate", async ({caller, candidate}) => {
+      const pc = voicePeersRef.current[caller];
+      if (pc) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    });
+
+    socketRef.current.on("user-left-voice", ({userId}) => {
+      console.log(`[Voice] User left voice: ${userId}`);
+      if (voicePeersRef.current[userId]) {
+        voicePeersRef.current[userId].close();
+        delete voicePeersRef.current[userId];
+      }
+      setVoicePeers((prev) => {
+        const next = {...prev};
+        delete next[userId];
+        return next;
+      });
+      setVoiceMembers((prev) => prev.filter((v) => v.userId !== userId));
+    });
+
+    socketRef.current.on("user-voice-mute-updated", ({userId, muted}) => {
+      setVoiceMembers((prev) =>
+        prev.map((v) => (v.userId === userId ? {...v, muted} : v))
+      );
+    });
+
     return () => {
       if (wakingTimeoutRef.current) clearTimeout(wakingTimeoutRef.current);
       socketRef.current?.disconnect();
+      if (localVoiceStreamRef.current) {
+        localVoiceStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      Object.values(voicePeersRef.current).forEach((pc) => pc.close());
     };
   }, [roomId]);
 
@@ -569,6 +692,97 @@ const RoomPage = () => {
         sender: user.name,
       });
       setMessage("");
+    }
+  };
+
+  // --- Live Reaction ---
+  const sendReaction = (emoji) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit("send-reaction", {roomId, emoji, sender: user.name});
+  };
+
+  // --- Voice Chat Handlers ---
+  const startVoiceChat = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
+      setLocalVoiceStream(stream);
+      localVoiceStreamRef.current = stream;
+      setIsInVoice(true);
+      isInVoiceRef.current = true;
+      setIsMuted(false);
+
+      socketRef.current.emit("join-voice-chat", {roomId});
+
+      setVoiceMembers((prev) => {
+        if (prev.find((v) => v.userId === socketRef.current.id)) return prev;
+        return [
+          ...prev,
+          {
+            userId: socketRef.current.id,
+            userName: user.name,
+            muted: false,
+          },
+        ];
+      });
+      toast.success("Joined voice chat!", {
+        style: {
+          background: "#111",
+          color: "#fff",
+          border: "1px solid rgba(249,115,22,0.2)",
+        },
+      });
+    } catch (err) {
+      console.error("Failed to get local voice stream", err);
+      toast.error("Microphone access is required for voice chat.", {
+        style: {
+          background: "#111",
+          color: "#fff",
+          border: "1px solid rgba(255, 0, 0, 0.2)",
+        },
+      });
+    }
+  };
+
+  const endVoiceChat = () => {
+    if (localVoiceStreamRef.current) {
+      localVoiceStreamRef.current.getTracks().forEach((track) => track.stop());
+    }
+    setLocalVoiceStream(null);
+    localVoiceStreamRef.current = null;
+    setIsInVoice(false);
+    isInVoiceRef.current = false;
+    setIsMuted(false);
+
+    Object.values(voicePeersRef.current).forEach((pc) => pc.close());
+    voicePeersRef.current = {};
+    setVoicePeers({});
+    setVoiceMembers([]);
+
+    socketRef.current.emit("leave-voice-chat", {roomId});
+    toast.success("Disconnected from voice chat.", {
+      style: {
+        background: "#111",
+        color: "#fff",
+        border: "1px solid rgba(255, 255, 255, 0.1)",
+      },
+    });
+  };
+
+  const toggleMuteVoice = () => {
+    if (localVoiceStreamRef.current) {
+      const nextMute = !isMuted;
+      localVoiceStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = !nextMute;
+      });
+      setIsMuted(nextMute);
+      socketRef.current.emit("voice-mute-toggle", {roomId, muted: nextMute});
+
+      setVoiceMembers((prev) =>
+        prev.map((v) => (v.userId === socketRef.current.id ? {...v, muted: nextMute} : v))
+      );
     }
   };
 
@@ -940,6 +1154,36 @@ const RoomPage = () => {
                     },
                   }}
                 />
+
+                {/* Floating Emojis Overlay */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-30">
+                  {reactions.map((r) => (
+                    <div
+                      key={r.id}
+                      className="reaction-bubble"
+                      style={{left: `${r.left}%`}}
+                      onAnimationEnd={() => {
+                        setReactions((prev) => prev.filter((item) => item.id !== r.id));
+                      }}
+                    >
+                      {r.emoji}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Floating Reaction Control Dock */}
+                <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-40 shadow-xl opacity-40 hover:opacity-100 transition-opacity duration-300">
+                  {["❤️", "😂", "🎉", "😮", "😢", "👍"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => sendReaction(emoji)}
+                      className="text-lg hover:scale-130 active:scale-95 transition-transform duration-200 cursor-pointer p-1"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+
                 {!hasInteracted && videoUrl && (
                   <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 backdrop-blur-sm">
                     <button
@@ -1280,6 +1524,93 @@ const RoomPage = () => {
 
         {/* Sidebar: Chat & Members */}
         <aside className="w-[420px] bg-[#0f0f0f] border-l border-white/5 flex flex-col overflow-y-auto custom-scrollbar pb-4 shrink-0">
+          {/* Hidden Voice Chat Audio streams */}
+          {isInVoice && Object.entries(voicePeers).map(([peerId, stream]) => (
+            <VoiceAudio key={peerId} stream={stream} />
+          ))}
+
+          {/* Voice Chat Card */}
+          <div className="shrink-0 flex flex-col m-4 mb-2 bg-[#141414] rounded-xl border border-white/5 shadow-lg overflow-hidden">
+            <div className="h-12 flex items-center px-5 border-b border-white/5 gap-3">
+              <Headphones size={16} className="text-primary animate-pulse" />
+              <h4 className="text-sm font-bold uppercase tracking-wider">Voice Channel</h4>
+              {isInVoice && (
+                <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[9px] font-black animate-pulse">
+                  ACTIVE
+                </span>
+              )}
+            </div>
+            
+            <div className="p-4 flex flex-col gap-3">
+              {isInVoice ? (
+                <div className="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={toggleMuteVoice}
+                      className={`p-2.5 rounded-lg border transition-all active:scale-95 flex items-center justify-center cursor-pointer ${
+                        isMuted 
+                          ? "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20" 
+                          : "bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500/20"
+                      }`}
+                      title={isMuted ? "Unmute Mic" : "Mute Mic"}
+                    >
+                      {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+                    </button>
+                    <span className="text-xs font-black uppercase tracking-wider text-white/60">
+                      {isMuted ? "Muted" : "Unmuted"}
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={endVoiceChat}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-black uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-md shadow-red-500/20"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={startVoiceChat}
+                  className="w-full py-3.5 bg-primary hover:bg-primary/90 text-white font-black rounded-lg text-xs tracking-widest uppercase flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-primary/20 cursor-pointer animate-pulse-slow"
+                >
+                  <Mic size={16} /> Join Voice Channel
+                </button>
+              )}
+              
+              {/* Voice Members List */}
+              {voiceMembers.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">
+                    Connected ({voiceMembers.length})
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
+                    {voiceMembers.map((vm) => (
+                      <div
+                        key={vm.userId}
+                        className="flex items-center justify-between bg-white/[0.02] border border-white/5 px-2.5 py-1.5 rounded-lg"
+                      >
+                        <span className="text-[11px] font-bold text-white/80 truncate max-w-[100px]">
+                          {vm.userName}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {vm.muted ? (
+                            <MicOff size={10} className="text-red-500" />
+                          ) : (
+                            <div className="voice-wave">
+                              <div className="voice-wave-bar" />
+                              <div className="voice-wave-bar" />
+                              <div className="voice-wave-bar" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Unified Chat Card */}
           <div className="flex-1 min-h-[450px] shrink-0 flex flex-col overflow-hidden border-b border-white/5 m-4 bg-[#141414] rounded-xl border border-white/5 shadow-lg">
             <div className="h-12 flex items-center justify-between px-5 border-b border-white/5 relative">
