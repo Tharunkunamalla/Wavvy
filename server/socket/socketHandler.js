@@ -349,8 +349,18 @@ export const socketHandler = (io) => {
       io.to(target).emit("video-offer", {caller, sdp});
     });
 
+    socket.on("start-video-call", ({roomId, callerName}) => {
+      socket.to(roomId).emit("incoming-video-call", {
+        callerName,
+        callerId: socket.id,
+      });
+    });
+
     socket.on("invite-to-video-call", ({targetId, callerName}) => {
-      io.to(targetId).emit("incoming-video-call", {callerName});
+      io.to(targetId).emit("incoming-video-call", {
+        callerName,
+        callerId: socket.id,
+      });
     });
 
     socket.on("video-invite-response", ({targetId, accepted, userName}) => {

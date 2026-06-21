@@ -231,17 +231,17 @@ const RoomPage = () => {
       navigate("/");
     });
 
-    socketRef.current.on("incoming-video-call", ({callerName}) => {
+    socketRef.current.on("incoming-video-call", ({callerName, callerId}) => {
       toast(
         (t) => (
           <div className="flex flex-col gap-3 p-1 font-sans">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center animate-pulse">
+              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center animate-pulse shrink-0">
                 <Video size={20} className="text-primary" />
               </div>
-              <div>
-                <p className="font-bold text-sm text-white">{callerName}</p>
-                <p className="text-xs text-white/60">
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-white truncate">{callerName}</p>
+                <p className="text-xs text-white/60 truncate">
                   Inviting you to Video Call
                 </p>
               </div>
@@ -252,7 +252,7 @@ const RoomPage = () => {
                   toast.dismiss(t.id);
                   startVideoCall(false);
                   socketRef.current.emit("video-invite-response", {
-                    targetId: callerName,
+                    targetId: callerId,
                     accepted: true,
                     userName: user.name,
                   });
@@ -265,7 +265,7 @@ const RoomPage = () => {
                 onClick={() => {
                   toast.dismiss(t.id);
                   socketRef.current.emit("video-invite-response", {
-                    targetId: callerName,
+                    targetId: callerId,
                     accepted: false,
                     userName: user.name,
                   });
