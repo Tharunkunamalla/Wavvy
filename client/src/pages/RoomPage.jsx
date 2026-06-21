@@ -8,6 +8,7 @@ import {
   Send,
   Users,
   Video,
+  VideoOff,
   Link as LinkIcon,
   LogOut,
   Play,
@@ -117,6 +118,8 @@ const RoomPage = () => {
   const peersRef = useRef({});
   const localStreamRef = useRef(null);
   const isInCallRef = useRef(false);
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
 
   // Voice Chat WebRTC State
   const [isInVoice, setIsInVoice] = useState(false);
@@ -927,6 +930,26 @@ const RoomPage = () => {
     }
   };
 
+  const toggleVideoCallAudio = () => {
+    if (localStreamRef.current) {
+      const audioTrack = localStreamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsAudioMuted(!audioTrack.enabled);
+      }
+    }
+  };
+
+  const toggleVideoCallVideo = () => {
+    if (localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoMuted(!videoTrack.enabled);
+      }
+    }
+  };
+
   const startVideoCall = async (isInitiator = false) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -937,6 +960,8 @@ const RoomPage = () => {
       localStreamRef.current = stream;
       setIsInCall(true);
       isInCallRef.current = true;
+      setIsAudioMuted(false);
+      setIsVideoMuted(false);
       socketRef.current.emit("join-video-call", {roomId});
 
       if (isInitiator) {
@@ -959,6 +984,8 @@ const RoomPage = () => {
     localStreamRef.current = null;
     setIsInCall(false);
     isInCallRef.current = false;
+    setIsAudioMuted(false);
+    setIsVideoMuted(false);
 
     Object.values(peersRef.current).forEach((pc) => pc.close());
     peersRef.current = {};
@@ -1244,7 +1271,7 @@ const RoomPage = () => {
             <div className="bg-[#141414] rounded-xl border border-white/5 p-4 shadow-lg flex gap-4 overflow-x-auto custom-scrollbar relative">
               <button
                 onClick={endVideoCall}
-                className="absolute right-4 top-4 z-10 bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110"
+                className="absolute right-4 top-4 z-10 bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer"
                 title="End Call"
               >
                 <X size={16} />
@@ -1257,21 +1284,46 @@ const RoomPage = () => {
                     <Video className="text-white/20 animate-pulse" />
                   </div>
                 )}
-                <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm">
+                <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm z-10">
                   You
                 </div>
-              </div>
-              {Object.entries(peers).map(([peerId, stream]) => (
-                <div
-                  key={peerId}
-                  className="w-48 h-32 shrink-0 relative bg-black rounded-lg overflow-hidden border border-white/10 group"
-                >
-                  <PeerVideo stream={stream} isLocal={false} />
-                  <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm">
-                    Peer
-                  </div>
+                
+                {/* Local controls overlay visible on hover */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-300 z-20">
+                  <button
+                    onClick={toggleVideoCallAudio}
+                    className={`p-2 rounded-full cursor-pointer transition-all hover:scale-110 ${
+                      isAudioMuted ? "bg-red-500 text-white" : "bg-black/60 hover:bg-black/80 text-white"
+                    }`}
+                    title={isAudioMuted ? "Unmute Mic" : "Mute Mic"}
+                  >
+                    {isAudioMuted ? <MicOff size={14} /> : <Mic size={14} />}
+                  </button>
+                  <button
+                    onClick={toggleVideoCallVideo}
+                    className={`p-2 rounded-full cursor-pointer transition-all hover:scale-110 ${
+                      isVideoMuted ? "bg-red-500 text-white" : "bg-black/60 hover:bg-black/80 text-white"
+                    }`}
+                    title={isVideoMuted ? "Turn Camera On" : "Turn Camera Off"}
+                  >
+                    {isVideoMuted ? <VideoOff size={14} /> : <Video size={14} />}
+                  </button>
                 </div>
-              ))}
+              </div>
+              {Object.entries(peers).map(([peerId, stream]) => {
+                const peerName = members.find((m) => m.id === peerId)?.name || "Peer";
+                return (
+                  <div
+                    key={peerId}
+                    className="w-48 h-32 shrink-0 relative bg-black rounded-lg overflow-hidden border border-white/10 group"
+                  >
+                    <PeerVideo stream={stream} isLocal={false} />
+                    <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm">
+                      {peerName}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
