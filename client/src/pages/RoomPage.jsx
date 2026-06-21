@@ -1564,12 +1564,7 @@ const RoomPage = () => {
               : "border-white/5"
           }`}>
             <div className="h-12 flex items-center px-5 border-b border-white/5 gap-3">
-              <Headphones 
-                size={16} 
-                className={`text-primary ${
-                  voiceMembers.length > 0 ? "animate-bounce" : "animate-pulse"
-                }`} 
-              />
+              <Headphones size={16} className="text-primary" />
               <h4 className="text-sm font-bold uppercase tracking-wider">Voice Channel</h4>
               {(isInVoice || voiceMembers.length > 0) && (
                 <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full text-[9px] font-black text-primary shadow-[0_0_10px_rgba(249,115,22,0.1)] animate-pulse">
@@ -1615,7 +1610,7 @@ const RoomPage = () => {
                       : "bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
                   }`}
                 >
-                  <Mic size={16} className={voiceMembers.length > 0 ? "animate-bounce" : ""} /> 
+                  <Mic size={16} /> 
                   {voiceMembers.length > 0 ? "Join Active Voice Channel" : "Join Voice Channel"}
                 </button>
               )}
