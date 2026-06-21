@@ -29,6 +29,27 @@ const getRoomMembers = async (io, roomId) => {
   }
 };
 
+// Helper to get all voice members in a room with their socket data
+const getVoiceMembers = (io, roomId) => {
+  try {
+    const socketIds = Array.from(io.sockets.adapter.rooms.get(`${roomId}-voice`) || []);
+    return socketIds
+      .map((sid) => {
+        const s = io.sockets.sockets.get(sid);
+        if (!s) return null;
+        return {
+          userId: sid,
+          userName: s.data.user?.name || "Guest",
+          muted: s.data.isVoiceMuted || false,
+        };
+      })
+      .filter(Boolean);
+  } catch (err) {
+    console.error("Error fetching voice members:", err);
+    return [];
+  }
+};
+
 export const socketHandler = (io) => {
   io.on("connection", (socket) => {
     console.log("Connected:", socket.id);
@@ -81,6 +102,10 @@ export const socketHandler = (io) => {
         if (room.messages && room.messages.length > 0) {
           socket.emit("chat-history", room.messages);
         }
+
+        // Emit current voice members
+        const voiceMembers = getVoiceMembers(io, roomId);
+        socket.emit("sync-voice-members", voiceMembers);
 
         // Broadcast updated member list
         const members = await getRoomMembers(io, roomId);
@@ -357,9 +382,11 @@ export const socketHandler = (io) => {
     // --- Voice Chat WebRTC Signaling ---
     socket.on("join-voice-chat", ({roomId}) => {
       socket.join(`${roomId}-voice`);
-      socket.to(`${roomId}-voice`).emit("user-joined-voice", {
+      socket.data.isVoiceMuted = false; // Initialize to unmuted when joining
+      io.to(roomId).emit("user-joined-voice", {
         userId: socket.id,
         userName: socket.data.name || "Guest",
+        muted: false,
       });
     });
 
@@ -376,7 +403,8 @@ export const socketHandler = (io) => {
     });
 
     socket.on("voice-mute-toggle", ({roomId, muted}) => {
-      socket.to(`${roomId}-voice`).emit("user-voice-mute-updated", {
+      socket.data.isVoiceMuted = muted;
+      io.to(roomId).emit("user-voice-mute-updated", {
         userId: socket.id,
         muted,
       });
@@ -384,7 +412,7 @@ export const socketHandler = (io) => {
 
     socket.on("leave-voice-chat", ({roomId}) => {
       socket.leave(`${roomId}-voice`);
-      socket.to(`${roomId}-voice`).emit("user-left-voice", {userId: socket.id});
+      io.to(roomId).emit("user-left-voice", {userId: socket.id});
     });
 
     socket.on("disconnecting", async () => {
@@ -393,7 +421,8 @@ export const socketHandler = (io) => {
         if (roomId.endsWith("-video")) {
           socket.to(roomId).emit("user-left-video", {userId: socket.id});
         } else if (roomId.endsWith("-voice")) {
-          socket.to(roomId).emit("user-left-voice", {userId: socket.id});
+          const mainRoomId = roomId.slice(0, -6);
+          io.to(mainRoomId).emit("user-left-voice", {userId: socket.id});
         } else if (roomId !== socket.id) {
           setTimeout(async () => {
             const members = await getRoomMembers(io, roomId);

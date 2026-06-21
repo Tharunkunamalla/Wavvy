@@ -218,6 +218,10 @@ const RoomPage = () => {
       setMembers(userList);
     });
 
+    socketRef.current.on("sync-voice-members", (list) => {
+      setVoiceMembers(list || []);
+    });
+
     socketRef.current.on("sync-playlist", (list) => {
       setPlaylist(list || []);
     });
@@ -523,8 +527,17 @@ const RoomPage = () => {
       return pc;
     };
 
-    socketRef.current.on("user-joined-voice", async ({userId, userName}) => {
-      if (!isInVoiceRef.current) return;
+    socketRef.current.on("user-joined-voice", async ({userId, userName, muted}) => {
+      if (userId === socketRef.current.id) return;
+
+      if (!isInVoiceRef.current) {
+        setVoiceMembers((prev) => {
+          if (prev.find((v) => v.userId === userId)) return prev;
+          return [...prev, {userId, userName, muted: muted || false}];
+        });
+        return;
+      }
+      
       console.log(`[Voice] User joined voice: ${userName} (${userId})`);
       
       const pc = createVoicePeerConnection(userId, userName);
@@ -539,7 +552,7 @@ const RoomPage = () => {
 
       setVoiceMembers((prev) => {
         if (prev.find((v) => v.userId === userId)) return prev;
-        return [...prev, {userId, userName, muted: false}];
+        return [...prev, {userId, userName, muted: muted || false}];
       });
     });
 
@@ -1545,14 +1558,24 @@ const RoomPage = () => {
           ))}
 
           {/* Voice Chat Card */}
-          <div className="shrink-0 flex flex-col m-4 mb-2 bg-[#141414] rounded-xl border border-white/5 shadow-lg overflow-hidden">
+          <div className={`shrink-0 flex flex-col m-4 mb-2 bg-[#141414] rounded-xl border transition-all duration-500 shadow-lg overflow-hidden ${
+            voiceMembers.length > 0 
+              ? "border-primary/30 shadow-[0_0_15px_rgba(249,115,22,0.15)]" 
+              : "border-white/5"
+          }`}>
             <div className="h-12 flex items-center px-5 border-b border-white/5 gap-3">
-              <Headphones size={16} className="text-primary animate-pulse" />
+              <Headphones 
+                size={16} 
+                className={`text-primary ${
+                  voiceMembers.length > 0 ? "animate-bounce" : "animate-pulse"
+                }`} 
+              />
               <h4 className="text-sm font-bold uppercase tracking-wider">Voice Channel</h4>
-              {isInVoice && (
-                <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-[9px] font-black animate-pulse">
-                  ACTIVE
-                </span>
+              {(isInVoice || voiceMembers.length > 0) && (
+                <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full text-[9px] font-black text-primary shadow-[0_0_10px_rgba(249,115,22,0.1)] animate-pulse">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+                  <span className="tracking-widest uppercase">ACTIVE</span>
+                </div>
               )}
             </div>
             
@@ -1586,9 +1609,14 @@ const RoomPage = () => {
               ) : (
                 <button
                   onClick={startVoiceChat}
-                  className="w-full py-3.5 bg-primary hover:bg-primary/90 text-white font-black rounded-lg text-xs tracking-widest uppercase flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-primary/20 cursor-pointer animate-pulse-slow"
+                  className={`w-full py-3.5 text-white font-black rounded-lg text-xs tracking-widest uppercase flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
+                    voiceMembers.length > 0
+                      ? "bg-gradient-to-r from-primary to-orange-500 hover:from-primary/95 hover:to-orange-500/95 shadow-md shadow-primary/30 animate-pulse"
+                      : "bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
+                  }`}
                 >
-                  <Mic size={16} /> Join Voice Channel
+                  <Mic size={16} className={voiceMembers.length > 0 ? "animate-bounce" : ""} /> 
+                  {voiceMembers.length > 0 ? "Join Active Voice Channel" : "Join Voice Channel"}
                 </button>
               )}
               
