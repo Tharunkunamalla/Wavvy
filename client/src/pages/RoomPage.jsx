@@ -2,82 +2,34 @@ import React, {useState, useEffect, useRef} from "react";
 import {useParams, useNavigate, useLocation} from "react-router-dom";
 import io from "socket.io-client";
 import ReactPlayer from "react-player";
-import toast, {Toaster} from "react-hot-toast";
+import toast from "react-hot-toast";
 import {BACKEND_URL} from "../lib/env";
 import {
-  Send,
-  Users,
   Video,
   VideoOff,
   Link as LinkIcon,
   LogOut,
   Play,
-  Plus,
-  Clock,
-  Monitor,
-  Crown,
-  Shield,
-  ShieldOff,
-  MoreVertical,
-  XCircle,
-  Trash2,
   Copy,
-  Check,
   Info,
-  ChevronRight,
-  SkipForward,
-  Settings2,
-  MessageSquare,
-  History,
-  AlignLeft,
-  Maximize2,
-  RefreshCw,
-  Repeat,
   X,
   AlertTriangle,
   Zap,
   Activity,
-  Wifi,
-  WifiOff,
   Mic,
   MicOff,
-  Headphones,
-  Smile,
 } from "lucide-react";
 
+import PeerVideo from "../components/PeerVideo";
+import VoiceAudio from "../components/VoiceAudio";
+import EmojiReactions from "../components/EmojiReactions";
+import LoadVideoCard from "../components/LoadVideoCard";
+import UpNextQueue from "../components/UpNextQueue";
+import VoiceChannel from "../components/VoiceChannel";
+import ChatCard from "../components/ChatCard";
+import MembersList from "../components/MembersList";
+
 const SOCKET_URL = BACKEND_URL;
-
-const PeerVideo = ({stream, isLocal}) => {
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
-  }, [stream]);
-
-  return (
-    <video
-      ref={videoRef}
-      autoPlay
-      playsInline
-      muted={isLocal}
-      className="w-full h-full object-cover rounded-lg border border-white/10 shadow-lg"
-    />
-  );
-};
-
-const VoiceAudio = ({stream}) => {
-  const audioRef = useRef(null);
-
-  useEffect(() => {
-    if (audioRef.current && stream) {
-      audioRef.current.srcObject = stream;
-    }
-  }, [stream]);
-
-  return <audio ref={audioRef} autoPlay />;
-};
 
 const RoomPage = () => {
   const {roomId} = useParams();
@@ -1239,32 +1191,7 @@ const RoomPage = () => {
           </div>
 
           {/* Sleek Emoji Reactions Bar */}
-          {videoUrl && (
-            <div className="flex justify-center items-center gap-4 bg-[#141414] border border-white/5 py-2.5 px-6 rounded-xl shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="flex items-center gap-2">
-                <Smile size={14} className="text-white/40 group-hover:text-primary transition-colors" />
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-white/40">
-                  Live Reactions
-                </span>
-              </div>
-              
-              <div className="w-px h-4 bg-white/10" />
-              
-              <div className="flex items-center gap-3">
-                {["❤️", "😂", "🎉", "😮", "😢", "👍"].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => sendReaction(emoji)}
-                    className="text-2xl hover:scale-130 active:scale-95 transition-transform duration-200 cursor-pointer p-1"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <EmojiReactions videoUrl={videoUrl} sendReaction={sendReaction} />
 
           {/* Native WebRTC Video Call Grid */}
           {isInCall && (
@@ -1327,279 +1254,45 @@ const RoomPage = () => {
             </div>
           )}
 
-          {/* Section 2: Load Video Card - Based on Image 2 */}
-          <div className="bg-[#141414] rounded-xl border border-white/5 p-8 shadow-lg">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Load Video</h2>
-              <button
-                onClick={() => setShowInfo(!showInfo)}
-                className="focus:outline-none"
-              >
-                <Info
-                  size={18}
-                  className={`cursor-pointer transition-colors ${showInfo ? "text-white" : "text-white/20 hover:text-white/60"}`}
-                />
-              </button>
-            </div>
+          {/* Section 2: Load Video Card */}
+          <LoadVideoCard
+            handleLoadVideo={handleLoadVideo}
+            canControl={canControl}
+            isHost={isHost}
+          />
 
-            {showInfo && (
-              <div className="bg-[#161d2a] border border-[#2d3748] rounded-lg p-5 mb-6 text-sm animate-in fade-in slide-in-from-top-2">
-                <p className="text-blue-400 font-bold mb-3">
-                  Supported (auto-detected):
-                </p>
-                <ul className="space-y-2 text-white/80">
-                  <li>
-                    <span className="font-bold text-white">YouTube:</span>{" "}
-                    youtube.com or youtu.be links
-                  </li>
-                  <li>
-                    <span className="font-bold text-white">Dropbox:</span> Share
-                    links (auto-converted)
-                  </li>
-                  <li>
-                    <span className="font-bold text-white">Direct:</span> Any
-                    .mp4, .webm, .ogg URL
-                  </li>
-                </ul>
-                <p className="text-red-400 font-bold mt-4">
-                  Not supported:{" "}
-                  <span className="text-white/60 font-normal">
-                    Google Drive
-                  </span>
-                </p>
-              </div>
-            )}
-
-            <form onSubmit={handleLoadVideo} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Paste YouTube, Dropbox, or direct .mp4 URL..."
-                className="w-full bg-[#333333]/50 border border-white/10 rounded-lg py-4 px-5 text-sm focus:outline-none focus:border-white/30 shadow-inner transition-all text-white/80 placeholder:text-white/30"
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-              />
-              <button
-                type="submit"
-                disabled={!inputUrl.trim() || (!canControl && !isHost)}
-                className="w-full py-4 bg-primary hover:bg-primary/90 text-white font-black rounded-xl transition-all text-sm tracking-[0.1em] uppercase disabled:opacity-30 disabled:hover:bg-primary shadow-lg shadow-primary/20 active:scale-[0.98]"
-              >
-                Load Video
-              </button>
-            </form>
-          </div>
-
-          {/* Section 3: UP NEXT Card - Based on Image 3 */}
-          <div className="bg-[#141414] rounded-xl border border-white/5 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <AlignLeft size={18} className="text-white/60" />
-                <h2 className="text-sm font-bold uppercase tracking-widest">
-                  UP NEXT
-                </h2>
-                {playlist.length > 0 && (
-                  <span className="bg-primary text-white px-2 py-0.5 rounded-full text-[10px] font-black">
-                    {playlist.length}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-white/30">
-                {/* Force Sync Button */}
-                <button
-                  onClick={() => emitCurrentState()}
-                  className={`p-1 rounded hover:bg-white/5 transition-all active:scale-90 ${canControl ? "opacity-100" : "opacity-20 cursor-not-allowed"}`}
-                  title="Force Sync For All"
-                  disabled={!canControl}
-                >
-                  <RefreshCw
-                    size={14}
-                    className="hover:text-primary transition-all active:rotate-180 duration-500"
-                  />
-                </button>
-
-                {/* Auto Play Next Toggle */}
-                <button
-                  onClick={() => {
-                    if (!canControl) return;
-                    console.log("[AutoPlay] Toggling to:", !autoPlayNext);
-                    socketRef.current.emit("toggle-auto-play", {
-                      roomId,
-                      autoPlayNext: !autoPlayNext,
-                    });
-                  }}
-                  title={
-                    autoPlayNext ? "Auto Play Next: ON" : "Auto Play Next: OFF"
-                  }
-                  className={`p-1 rounded hover:bg-white/5 transition-all active:scale-90 ${canControl ? "opacity-100" : "opacity-20 cursor-not-allowed"}`}
-                  disabled={!canControl}
-                >
-                  <Repeat
-                    size={14}
-                    className={`${autoPlayNext ? "text-primary" : "hover:text-primary"} transition-colors`}
-                  />
-                </button>
-
-                {/* Clear Playlist */}
-                <button
-                  onClick={() =>
-                    canControl &&
-                    socketRef.current.emit("set-playlist", {
-                      roomId,
-                      playlist: [],
-                    })
-                  }
-                  disabled={!canControl || playlist.length === 0}
-                  className="p-1 rounded hover:bg-white/5 transition-all active:scale-90 disabled:opacity-20"
-                  title="Clear Queue"
-                >
-                  <Trash2
-                    size={14}
-                    className="hover:text-red-500 transition-colors"
-                  />
-                </button>
-
-                {/* Expand/Collapse */}
-                <button
-                  className="p-1 rounded hover:bg-white/5 transition-all active:scale-90"
-                  onClick={() => setIsQueueExpanded(!isQueueExpanded)}
-                  title="Toggle Expand Queue"
-                >
-                  <Maximize2
-                    size={14}
-                    className={`${isQueueExpanded ? "text-primary" : "hover:text-white"} transition-colors`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* Now Playing indicator */}
-            {/* Now Playing indicator with Brand Glow */}
-            <div className="flex items-center gap-2 mb-6 bg-primary/5 border border-primary/20 p-2.5 rounded text-sm relative overflow-hidden">
-              <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_#f97316]"></div>
-              <span className="text-[11px] font-black text-primary uppercase tracking-wider ml-1">
-                NOW PLAYING
-              </span>
-              <span className="text-[11px] text-white/80 truncate flex-1 ml-2 font-medium">
-                {videoUrl ? (
-                  <>
-                    YouTube · <span className="text-white">{videoUrl.includes('v=') ? videoUrl.split('v=')[1]?.substring(0, 11) : 'Link'}...</span>
-                  </>
-                ) : (
-                  "Waiting for video..."
-                )}
-              </span>
-            </div>
-
-            {/* Add to Queue input */}
-            <div className="w-full bg-[#1e1e1e] border border-white/10 rounded-lg py-1 px-1 pl-4 flex items-center mb-6">
-              <input
-                type="text"
-                placeholder="YouTube or direct video URL..."
-                className="flex-1 bg-transparent text-sm focus:outline-none text-white/60 placeholder:text-white/30"
-                value={queueInput}
-                onChange={(e) => setQueueInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addToPlaylist();
-                  }
-                }}
-              />
-              <button
-                onClick={addToPlaylist}
-                className="p-2.5 bg-primary/10 hover:bg-primary/20 rounded-md transition-colors border border-primary/20"
-              >
-                <Plus size={14} className="text-primary font-bold" />
-              </button>
-            </div>
-
-            {/* Queue List */}
-            <div
-              className={`space-y-1 mb-6 transition-all duration-500 ${isQueueExpanded ? "max-h-[800px]" : "max-h-[160px]"} overflow-y-auto custom-scrollbar px-1`}
-            >
-              {playlist.length > 0 ? (
-                playlist.map((item, i) => {
-                  // Handle both old string format and new object format
-                  const url = typeof item === "string" ? item : item.url;
-                  const addedBy =
-                    typeof item === "string" ? "host" : item.addedBy;
-
-                  const thumbnail = getYouTubeThumbnail(url);
-                  return (
-                    <div
-                      key={i}
-                      className="flex items-center gap-4 py-2 border-b border-white/5 last:border-0 group transition-colors hover:bg-white/[0.02] px-2 rounded"
-                    >
-                      <span className="text-[11px] font-medium text-white/20 w-3">
-                        {i + 1}
-                      </span>
-                      <div className="w-10 h-6 bg-[#141414] rounded overflow-hidden flex items-center justify-center text-white/5 relative border border-white/5 shadow-sm">
-                        {thumbnail ? (
-                          <img
-                            src={thumbnail}
-                            alt="Thumbnail"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Monitor size={10} />
-                        )}
-                        <div className="absolute bottom-0 right-0 bg-black/80 text-[#ff0000] text-[5px] px-[2px] rounded-sm font-black">
-                          YT
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-white/90 truncate">
-                          YouTube ·{" "}
-                          {url.includes("v=")
-                            ? url.split("v=")[1]?.substring(0, 11)
-                            : "Video"}
-                          ...
-                        </p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Users size={8} className="text-white/30" />
-                          <p className="text-[9px] text-white/40">
-                            added by{" "}
-                            {addedBy === user.name ? "you" : addedBy || "user"}
-                          </p>
-                        </div>
-                      </div>
-                      {canControl && (
-                        <button
-                          onClick={() =>
-                            socketRef.current.emit("remove-from-playlist", {
-                              roomId,
-                              index: i,
-                            })
-                          }
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-white/10 rounded"
-                        >
-                          <Trash2
-                            size={12}
-                            className="text-white/40 hover:text-red-500"
-                          />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-8 flex flex-col items-center justify-center opacity-10">
-                  <Monitor size={24} />
-                  <p className="text-[9px] font-black uppercase mt-2">
-                    Queue is empty
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Skip to Next button */}
-            <button
-              onClick={skipToNext}
-              disabled={playlist.length === 0 || !canControl}
-              className="w-full py-4 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-xl text-primary text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all disabled:opacity-20 active:scale-95"
-            >
-              <SkipForward size={16} /> Skip to Next
-            </button>
-          </div>
+          {/* Section 3: UP NEXT Card */}
+          <UpNextQueue
+            playlist={playlist}
+            videoUrl={videoUrl}
+            canControl={canControl}
+            autoPlayNext={autoPlayNext}
+            emitCurrentState={emitCurrentState}
+            onToggleAutoPlay={() => {
+              socketRef.current.emit("toggle-auto-play", {
+                roomId,
+                autoPlayNext: !autoPlayNext,
+              });
+            }}
+            onClearQueue={() => {
+              socketRef.current.emit("set-playlist", {
+                roomId,
+                playlist: [],
+              });
+            }}
+            onRemoveFromPlaylist={(index) => {
+              socketRef.current.emit("remove-from-playlist", {
+                roomId,
+                index,
+              });
+            }}
+            onAddToPlaylist={(url) => {
+              const cleaned = cleanUrl(url);
+              socketRef.current.emit("add-to-playlist", { roomId, url: cleaned });
+            }}
+            onSkipToNext={skipToNext}
+            currentUser={user}
+          />
         </main>
 
         {/* Sidebar: Chat & Members */}
@@ -1610,339 +1303,46 @@ const RoomPage = () => {
           ))}
 
           {/* Voice Chat Card */}
-          <div className={`shrink-0 flex flex-col m-4 mb-2 bg-[#141414] rounded-xl border transition-all duration-500 shadow-lg overflow-hidden ${
-            voiceMembers.length > 0 
-              ? "border-primary/30 shadow-[0_0_15px_rgba(249,115,22,0.15)]" 
-              : "border-white/5"
-          }`}>
-            <div className="h-12 flex items-center px-5 border-b border-white/5 gap-3">
-              <Headphones size={16} className="text-primary" />
-              <h4 className="text-sm font-bold uppercase tracking-wider">Voice Channel</h4>
-              {(isInVoice || voiceMembers.length > 0) && (
-                <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full text-[9px] font-black text-primary shadow-[0_0_10px_rgba(249,115,22,0.1)] animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
-                  <span className="tracking-widest uppercase">ACTIVE</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-4 flex flex-col gap-3">
-              {isInVoice ? (
-                <div className="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-white/5">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={toggleMuteVoice}
-                      className={`p-2.5 rounded-lg border transition-all active:scale-95 flex items-center justify-center cursor-pointer ${
-                        isMuted 
-                          ? "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20" 
-                          : "bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500/20"
-                      }`}
-                      title={isMuted ? "Unmute Mic" : "Mute Mic"}
-                    >
-                      {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
-                    </button>
-                    <span className="text-xs font-black uppercase tracking-wider text-white/60">
-                      {isMuted ? "Muted" : "Unmuted"}
-                    </span>
-                  </div>
-                  
-                  <button
-                    onClick={endVoiceChat}
-                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-black uppercase tracking-wider rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-md shadow-red-500/20"
-                  >
-                    Disconnect
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={startVoiceChat}
-                  className={`w-full py-3.5 text-white font-black rounded-lg text-xs tracking-widest uppercase flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer ${
-                    voiceMembers.length > 0
-                      ? "bg-gradient-to-r from-primary to-orange-500 hover:from-primary/95 hover:to-orange-500/95 shadow-md shadow-primary/30 animate-pulse"
-                      : "bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"
-                  }`}
-                >
-                  <Mic size={16} /> 
-                  {voiceMembers.length > 0 ? "Join Active Voice Channel" : "Join Voice Channel"}
-                </button>
-              )}
-              
-              {/* Voice Members List */}
-              {voiceMembers.length > 0 && (
-                <div className="mt-2 space-y-2">
-                  <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">
-                    Connected ({voiceMembers.length})
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-1">
-                    {voiceMembers.map((vm) => (
-                      <div
-                        key={vm.userId}
-                        className="flex items-center justify-between bg-white/[0.02] border border-white/5 px-2.5 py-1.5 rounded-lg"
-                      >
-                        <span className="text-[11px] font-bold text-white/80 truncate max-w-[100px]">
-                          {vm.userName}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {vm.muted ? (
-                            <MicOff size={10} className="text-red-500" />
-                          ) : (
-                            <div className="voice-wave">
-                              <div className="voice-wave-bar" />
-                              <div className="voice-wave-bar" />
-                              <div className="voice-wave-bar" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <VoiceChannel
+            isInVoice={isInVoice}
+            voiceMembers={voiceMembers}
+            isMuted={isMuted}
+            toggleMuteVoice={toggleMuteVoice}
+            endVoiceChat={endVoiceChat}
+            startVoiceChat={startVoiceChat}
+          />
 
           {/* Unified Chat Card */}
-          <div className="flex-1 min-h-[450px] shrink-0 flex flex-col overflow-hidden border-b border-white/5 m-4 bg-[#141414] rounded-xl border border-white/5 shadow-lg">
-            <div className="h-12 flex items-center justify-between px-5 border-b border-white/5 relative">
-              <h4 className="text-sm font-bold">Chat</h4>
-              {canControl && (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowChatSettings(!showChatSettings)}
-                    className="focus:outline-none p-1 hover:bg-white/5 rounded transition-colors active:scale-95"
-                  >
-                    <Settings2
-                      size={14}
-                      className="text-white/40 hover:text-white transition-colors"
-                    />
-                  </button>
-                  {showChatSettings && (
-                    <div className="absolute right-0 top-8 w-32 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl z-[100] p-1 animate-in slide-in-from-top-2">
-                      <button
-                        onClick={() => {
-                          socketRef.current.emit("clear-chat", {roomId});
-                          setShowChatSettings(false);
-                          toast.success("Chat cleared", {
-                            style: {
-                              background: "#111",
-                              color: "#fff",
-                              border: "1px solid rgba(255,255,255,0.1)",
-                            },
-                          });
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-md hover:bg-red-500/10 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-colors text-red-500/80"
-                      >
-                        <Trash2 size={12} /> Clear Chat
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"
-            >
-              {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center opacity-10 p-8">
-                  <MessageSquare size={48} strokeWidth={1} className="mb-4" />
-                  <p className="text-xs font-black uppercase tracking-widest">
-                    No messages yet. Start the conversation!
-                  </p>
-                </div>
-              ) : (
-                messages.map((msg, i) => {
-                  const isMe = msg.sender === user.name;
-                  const timeStr = msg.timestamp
-                    ? new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "";
-
-                  return (
-                    <div
-                      key={i}
-                      className={`flex flex-col mb-4 ${isMe ? "items-end" : "items-start"}`}
-                    >
-                      <div className="flex items-center gap-2 mb-1 px-1">
-                        {!isMe && (
-                          <span className="text-[10px] font-black text-primary uppercase tracking-tighter">
-                            {msg.sender}
-                          </span>
-                        )}
-                        <span className="text-[8px] font-medium text-orange-500">
-                          {timeStr}
-                        </span>
-                        {isMe && (
-                          <span className="text-[10px] font-black text-white/40 uppercase tracking-tighter">
-                            You
-                          </span>
-                        )}
-                      </div>
-                      <div
-                        className={`max-w-[90%] px-4 py-2.5 rounded-2xl text-[13px] font-medium leading-relaxed transition-all hover:shadow-lg whitespace-pre-wrap ${
-                          isMe
-                            ? "bg-zinc-800 text-white rounded-tr-none border border-white/5 shadow-md"
-                            : "bg-white/5 text-white/90 rounded-tl-none border border-white/10"
-                        }`}
-                      >
-                        {msg.message}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="p-4 bg-black/20">
-              <form
-                onSubmit={sendMessage}
-                className="relative flex items-center gap-2"
-              >
-                <textarea
-                  rows={1}
-                  placeholder="Type a message..."
-                  className="flex-1 bg-[#1e1e1e] border border-white/5 rounded-lg py-3 px-4 pr-12 text-sm focus:outline-none focus:border-orange-500 transition-all font-medium resize-none min-h-[46px] max-h-[120px]"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage(e);
-                    }
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="absolute right-3 text-orange-500 hover:text-primary transition-colors text-orange-900"
-                >
-                  <Send size={18} />
-                </button>
-              </form>
-              <p className="text-[8px] text-center text-white/10 mt-3 font-medium uppercase tracking-widest">
-                Press Enter to send • Shift + Enter for new line
-              </p>
-            </div>
-          </div>
+          <ChatCard
+            messages={messages}
+            currentUser={user}
+            canControl={canControl}
+            onClearChat={() => socketRef.current.emit("clear-chat", { roomId })}
+            onSendMessage={(msgText) => {
+              socketRef.current.emit("send-message", {
+                roomId,
+                message: msgText,
+                sender: user.name,
+              });
+            }}
+          />
 
           {/* Members Card */}
-          <div className="h-[350px] shrink-0 flex flex-col m-4 mt-0 bg-[#141414] rounded-xl border border-white/5 shadow-lg overflow-hidden">
-            <div className="h-12 flex items-center px-5 border-b border-white/5 gap-2">
-              <Users size={14} className="text-white/40" />
-              <h4 className="text-sm font-bold">Members</h4>
-              <span className="ml-auto bg-white/5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white/40">
-                {members.length}
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-              {[...members]
-                .sort(
-                  (a, b) =>
-                    (b.isHost ? 1 : 0) - (a.isHost ? 1 : 0) ||
-                    (b.canControl ? 1 : 0) - (a.canControl ? 1 : 0) ||
-                    a.name.localeCompare(b.name),
-                )
-                .map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-center gap-3 bg-[#1e1e1e]/30 p-2.5 rounded-lg border border-white/5 group relative"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
-                      {m.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h5 className="text-[11px] font-black truncate text-white/80">
-                          {m.name}
-                        </h5>
-                        {m.isHost && (
-                          <Crown size={10} className="text-yellow-500" />
-                        )}
-                      </div>
-                      <p
-                        className={`text-[8px] font-black uppercase tracking-widest flex items-center gap-1 ${m.canControl ? "text-green-500" : "text-white/20"}`}
-                      >
-                        {m.canControl ? "Moderator" : "Viewer"}
-                      </p>
-                    </div>
-
-                    {isHost && m.id !== socketRef.current?.id && (
-                      <MoreVertical
-                        size={14}
-                        className="text-white/20 cursor-pointer hover:text-white"
-                        onClick={() =>
-                          setShowMemberMenu(
-                            showMemberMenu === m.id ? null : m.id,
-                          )
-                        }
-                      />
-                    )}
-
-                    {showMemberMenu === m.id && (
-                      <div className="absolute right-10 top-8 w-44 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-2xl z-[100] p-1 animate-in slide-in-from-top-2">
-                        <button
-                          onClick={() => togglePermission(m.id, !m.canControl)}
-                          className="w-full text-left px-3 py-2 rounded-md hover:bg-white/5 text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-white/60"
-                        >
-                          {m.canControl ? (
-                            <ShieldOff size={12} />
-                          ) : (
-                            <Shield size={12} />
-                          )}{" "}
-                          {m.canControl ? "Revoke" : "Grant"}
-                        </button>
-                        <button
-                          onClick={() => inviteToCall(m.id)}
-                          className="w-full text-left px-3 py-2 rounded-md hover:bg-primary/10 text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-primary/80"
-                        >
-                          <Video size={12} /> Video Call
-                        </button>
-                        <button
-                          onClick={() => handleKick(m.id)}
-                          className="w-full text-left px-3 py-2 rounded-md hover:bg-red-500/10 text-[9px] font-black uppercase tracking-widest flex items-center gap-3 transition-colors text-red-500/60"
-                        >
-                          <XCircle size={12} /> Kick
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-            {isHost && (
-              <div className="p-4 grid grid-cols-2 gap-2 border-t border-white/5 bg-black/40">
-                <button
-                  onClick={grantAll}
-                  className="py-2.5 bg-green-500/10 hover:bg-green-500/20 text-green-500 border border-green-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
-                >
-                  Grant All
-                </button>
-                <button
-                  onClick={revokeAll}
-                  className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
-                >
-                  Revoke All
-                </button>
-                {!isInCall && (
-                  <button
-                    onClick={() => startVideoCall(true)}
-                    className="col-span-2 py-4 bg-primary hover:bg-primary/90 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all mt-2 active:scale-95 shadow-lg shadow-primary/30"
-                  >
-                    <Video size={18} /> Start Video Call
-                  </button>
-                )}
-              </div>
-            )}
-            {!isHost && !canControl && (
-              <div className="p-4 border-t border-white/5 bg-black/40">
-                <button
-                  onClick={requestModAccess}
-                  className="w-full py-4 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/40 text-orange-500 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg"
-                >
-                  <Shield size={16} /> Request Mod Access
-                </button>
-              </div>
-            )}
-          </div>
+          <MembersList
+            members={members}
+            isHost={isHost}
+            currentUser={user}
+            canControl={canControl}
+            isInCall={isInCall}
+            socketId={socketRef.current?.id}
+            onTogglePermission={togglePermission}
+            onInviteToCall={inviteToCall}
+            onKickUser={handleKick}
+            onGrantAll={grantAll}
+            onRevokeAll={revokeAll}
+            onStartVideoCall={startVideoCall}
+            onRequestModAccess={requestModAccess}
+          />
         </aside>
       </div>
     </div>
