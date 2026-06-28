@@ -1,6 +1,18 @@
 import Room from "../models/Room.js";
 import { cleanUrl } from "../utils/helpers.js";
 
+// Helper to broadcast active public rooms to all connected sockets
+const broadcastPublicRooms = async (io) => {
+  try {
+    const rooms = await Room.find({ isPublic: true, activeMembersCount: { $gt: 0 } })
+      .select("roomId roomName creatorEmail activeMembersCount createdAt")
+      .sort({ activeMembersCount: -1, createdAt: -1 });
+    io.emit("public-rooms-update", rooms);
+  } catch (err) {
+    console.error("Error broadcasting public rooms:", err);
+  }
+};
+
 // Helper to get all members in a room with their socket data
 const getRoomMembers = async (io, roomId) => {
   try {
@@ -121,6 +133,7 @@ export const socketHandler = (io) => {
 
         // Update active count in DB
         await Room.findOneAndUpdate({ roomId }, { activeMembersCount: members.length });
+        await broadcastPublicRooms(io);
       } catch (err) {
         console.error("Join room error:", err);
       }
@@ -451,6 +464,7 @@ export const socketHandler = (io) => {
             
             // Update active count in DB
             await Room.findOneAndUpdate({ roomId }, { activeMembersCount: members.length });
+            await broadcastPublicRooms(io);
           }, 200);
         }
       }

@@ -15,7 +15,8 @@ import {
   Info,
 } from "lucide-react";
 import {Link} from "react-router-dom";
-import {API_BASE_URL} from "../lib/env";
+import io from "socket.io-client";
+import {API_BASE_URL, BACKEND_URL} from "../lib/env";
 
 const LandingPage = () => {
   const [roomId, setRoomId] = useState("");
@@ -41,6 +42,21 @@ const LandingPage = () => {
   }, [user?.email]);
 
   useEffect(() => {
+    // Connect to backend socket to receive live updates of public watch rooms
+    const socket = io(BACKEND_URL, {
+      transports: ["websocket"],
+      upgrade: false,
+    });
+
+    socket.on("connect", () => {
+      console.log("⚡ Explore lobby socket connected");
+    });
+
+    socket.on("public-rooms-update", (rooms) => {
+      console.log("Live explore lobby update received:", rooms);
+      setPublicRooms(rooms);
+    });
+
     const fetchPublicRooms = async () => {
       try {
         setIsLoadingPublic(true);
@@ -57,8 +73,10 @@ const LandingPage = () => {
     };
 
     fetchPublicRooms();
-    const interval = setInterval(fetchPublicRooms, 10000);
-    return () => clearInterval(interval);
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const handleCreateRoom = (e) => {
