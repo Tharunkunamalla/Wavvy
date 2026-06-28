@@ -29,6 +29,10 @@ import VoiceChannel from "../components/VoiceChannel";
 import ChatCard from "../components/ChatCard";
 import MembersList from "../components/MembersList";
 
+// Custom WebRTC hooks
+import { useWebRTCCall } from "../hooks/useWebRTCCall";
+import { useWebRTCVoice } from "../hooks/useWebRTCVoice";
+
 const SOCKET_URL = BACKEND_URL;
 
 const RoomPage = () => {
@@ -40,11 +44,6 @@ const RoomPage = () => {
   const playerRef = useRef(null);
   const isSyncing = useRef(false);
   const scrollRef = useRef();
-  
-  // WebRTC Candidate Queues to handle asynchronous signaling ordering
-  const candidateQueue = useRef({});
-  const voiceCandidateQueue = useRef({});
-  const currentVideoRoomId = useRef(null);
 
   const [roomName, setRoomName] = useState(location.state?.roomName || "");
   const [isPublic, setIsPublic] = useState(location.state?.isPublic || false);
@@ -70,34 +69,41 @@ const RoomPage = () => {
   const [isQueueExpanded, setIsQueueExpanded] = useState(false);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
-  // WebRTC State
-  const [isInCall, setIsInCall] = useState(false);
-  const [localStream, setLocalStream] = useState(null);
-  const [peers, setPeers] = useState({});
-  const peersRef = useRef({});
-  const localStreamRef = useRef(null);
-  const isInCallRef = useRef(false);
-  const [isAudioMuted, setIsAudioMuted] = useState(false);
-  const [isVideoMuted, setIsVideoMuted] = useState(false);
-  const [isPrivateCall, setIsPrivateCall] = useState(false);
-
-  // Voice Chat WebRTC State
-  const [isInVoice, setIsInVoice] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [voiceMembers, setVoiceMembers] = useState([]);
-  const [voicePeers, setVoicePeers] = useState({});
-  const voicePeersRef = useRef({});
-  const localVoiceStreamRef = useRef(null);
-  const [localVoiceStream, setLocalVoiceStream] = useState(null);
-  const isInVoiceRef = useRef(false);
-
-  // Live reactions state
-  const [reactions, setReactions] = useState([]);
-
   // Connection State
   const [isConnected, setIsConnected] = useState(false);
   const [isWakingUp, setIsWakingUp] = useState(false);
   const wakingTimeoutRef = useRef(null);
+
+  // WebRTC hooks for video call and voice chat
+  const {
+    isInCall,
+    localStream,
+    peers,
+    isAudioMuted,
+    isVideoMuted,
+    isPrivateCall,
+    currentVideoRoomId,
+    startVideoCall,
+    endVideoCall,
+    inviteToCall,
+    toggleVideoCallAudio,
+    toggleVideoCallVideo,
+  } = useWebRTCCall(socketRef, roomId, user, members);
+
+  const {
+    isInVoice,
+    isMuted,
+    voiceMembers,
+    voicePeers,
+    startVoiceChat,
+    endVoiceChat,
+    toggleMuteVoice,
+  } = useWebRTCVoice(socketRef, roomId, user, members);
+
+  // Live reactions state
+  const [reactions, setReactions] = useState([]);
+
+
 
   useEffect(() => {
     if (!user) {
@@ -369,122 +375,6 @@ const RoomPage = () => {
       }, 1000);
     });
 
-    // WebRTC Signaling Listeners
-    const createPeerConnection = (partnerId) => {
-      const pc = new RTCPeerConnection({
-        iceServers: [{urls: "stun:stun.l.google.com:19302"}],
-      });
-
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => {
-          pc.addTrack(track, localStreamRef.current);
-        });
-      }
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socketRef.current.emit("video-ice-candidate", {
-            target: partnerId,
-            caller: socketRef.current.id,
-            candidate: event.candidate,
-          });
-        }
-      };
-
-      pc.ontrack = (event) => {
-        setPeers((prev) => ({
-          ...prev,
-          [partnerId]: event.streams[0],
-        }));
-      };
-
-      peersRef.current[partnerId] = pc;
-      return pc;
-    };
-
-    socketRef.current.on("user-joined-video", async ({userId}) => {
-      if (!isInCallRef.current) return;
-      const pc = createPeerConnection(userId);
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socketRef.current.emit("video-offer", {
-        target: userId,
-        caller: socketRef.current.id,
-        sdp: offer,
-      });
-    });
-
-    socketRef.current.on("video-offer", async ({caller, sdp}) => {
-      if (!isInCallRef.current) return;
-      const pc = createPeerConnection(caller);
-      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socketRef.current.emit("video-answer", {
-        target: caller,
-        caller: socketRef.current.id,
-        sdp: answer,
-      });
-
-      // Process queued candidates
-      const queue = candidateQueue.current[caller] || [];
-      for (const candidate of queue) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.error("Error adding queued video ice candidate:", e);
-        }
-      }
-      candidateQueue.current[caller] = [];
-    });
-
-    socketRef.current.on("video-answer", async ({caller, sdp}) => {
-      const pc = peersRef.current[caller];
-      if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-
-        // Process queued candidates
-        const queue = candidateQueue.current[caller] || [];
-        for (const candidate of queue) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {
-            console.error("Error adding queued video ice candidate:", e);
-          }
-        }
-        candidateQueue.current[caller] = [];
-      }
-    });
-
-    socketRef.current.on("video-ice-candidate", async ({caller, candidate}) => {
-      const pc = peersRef.current[caller];
-      if (pc && pc.remoteDescription) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.error("Error adding video ice candidate:", e);
-        }
-      } else {
-        if (!candidateQueue.current[caller]) {
-          candidateQueue.current[caller] = [];
-        }
-        candidateQueue.current[caller].push(candidate);
-      }
-    });
-
-    socketRef.current.on("user-left-video", ({userId}) => {
-      if (peersRef.current[userId]) {
-        peersRef.current[userId].close();
-        delete peersRef.current[userId];
-      }
-      setPeers((prev) => {
-        const next = {...prev};
-        delete next[userId];
-        return next;
-      });
-    });
-
-    // --- Live Reactions Listener ---
     socketRef.current.on("receive-reaction", ({emoji, sender, id}) => {
       setReactions((prev) => [
         ...prev,
@@ -497,159 +387,9 @@ const RoomPage = () => {
       ]);
     });
 
-    // --- Voice Signaling Listeners ---
-    const createVoicePeerConnection = (partnerId, partnerName) => {
-      const pc = new RTCPeerConnection({
-        iceServers: [{urls: "stun:stun.l.google.com:19302"}],
-      });
-
-      if (localVoiceStreamRef.current) {
-        localVoiceStreamRef.current.getTracks().forEach((track) => {
-          pc.addTrack(track, localVoiceStreamRef.current);
-        });
-      }
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socketRef.current.emit("voice-ice-candidate", {
-            target: partnerId,
-            caller: socketRef.current.id,
-            candidate: event.candidate,
-          });
-        }
-      };
-
-      pc.ontrack = (event) => {
-        console.log(`[Voice] Received track from ${partnerName}`);
-        setVoicePeers((prev) => ({
-          ...prev,
-          [partnerId]: event.streams[0],
-        }));
-      };
-
-      voicePeersRef.current[partnerId] = pc;
-      return pc;
-    };
-
-    socketRef.current.on("user-joined-voice", async ({userId, userName, muted}) => {
-      if (userId === socketRef.current.id) return;
-
-      if (!isInVoiceRef.current) {
-        setVoiceMembers((prev) => {
-          if (prev.find((v) => v.userId === userId)) return prev;
-          return [...prev, {userId, userName, muted: muted || false}];
-        });
-        return;
-      }
-      
-      console.log(`[Voice] User joined voice: ${userName} (${userId})`);
-      
-      const pc = createVoicePeerConnection(userId, userName);
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      
-      socketRef.current.emit("voice-offer", {
-        target: userId,
-        caller: socketRef.current.id,
-        sdp: offer,
-      });
-
-      setVoiceMembers((prev) => {
-        if (prev.find((v) => v.userId === userId)) return prev;
-        return [...prev, {userId, userName, muted: muted || false}];
-      });
-    });
-
-    socketRef.current.on("voice-offer", async ({caller, sdp}) => {
-      if (!isInVoiceRef.current) return;
-      console.log(`[Voice] Received voice offer from ${caller}`);
-      const partnerName = members.find((m) => m.id === caller)?.name || "Guest";
-      
-      const pc = createVoicePeerConnection(caller, partnerName);
-      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      
-      socketRef.current.emit("voice-answer", {
-        target: caller,
-        caller: socketRef.current.id,
-        sdp: answer,
-      });
-
-      // Process queued candidates
-      const queue = voiceCandidateQueue.current[caller] || [];
-      for (const candidate of queue) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.error("Error adding queued voice ice candidate:", e);
-        }
-      }
-      voiceCandidateQueue.current[caller] = [];
-    });
-
-    socketRef.current.on("voice-answer", async ({caller, sdp}) => {
-      console.log(`[Voice] Received voice answer from ${caller}`);
-      const pc = voicePeersRef.current[caller];
-      if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-
-        // Process queued candidates
-        const queue = voiceCandidateQueue.current[caller] || [];
-        for (const candidate of queue) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {
-            console.error("Error adding queued voice ice candidate:", e);
-          }
-        }
-        voiceCandidateQueue.current[caller] = [];
-      }
-    });
-
-    socketRef.current.on("voice-ice-candidate", async ({caller, candidate}) => {
-      const pc = voicePeersRef.current[caller];
-      if (pc && pc.remoteDescription) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.error("Error adding voice ice candidate:", e);
-        }
-      } else {
-        if (!voiceCandidateQueue.current[caller]) {
-          voiceCandidateQueue.current[caller] = [];
-        }
-        voiceCandidateQueue.current[caller].push(candidate);
-      }
-    });
-
-    socketRef.current.on("user-left-voice", ({userId}) => {
-      console.log(`[Voice] User left voice: ${userId}`);
-      if (voicePeersRef.current[userId]) {
-        voicePeersRef.current[userId].close();
-        delete voicePeersRef.current[userId];
-      }
-      setVoicePeers((prev) => {
-        const next = {...prev};
-        delete next[userId];
-        return next;
-      });
-      setVoiceMembers((prev) => prev.filter((v) => v.userId !== userId));
-    });
-
-    socketRef.current.on("user-voice-mute-updated", ({userId, muted}) => {
-      setVoiceMembers((prev) =>
-        prev.map((v) => (v.userId === userId ? {...v, muted} : v))
-      );
-    });
-
     return () => {
       if (wakingTimeoutRef.current) clearTimeout(wakingTimeoutRef.current);
       socketRef.current?.disconnect();
-      if (localVoiceStreamRef.current) {
-        localVoiceStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-      Object.values(voicePeersRef.current).forEach((pc) => pc.close());
     };
   }, [roomId]);
 
@@ -749,91 +489,7 @@ const RoomPage = () => {
     socketRef.current.emit("send-reaction", {roomId, emoji, sender: user.name});
   };
 
-  // --- Voice Chat Handlers ---
-  const startVoiceChat = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false,
-      });
-      setLocalVoiceStream(stream);
-      localVoiceStreamRef.current = stream;
-      setIsInVoice(true);
-      isInVoiceRef.current = true;
-      setIsMuted(false);
 
-      socketRef.current.emit("join-voice-chat", {roomId});
-
-      setVoiceMembers((prev) => {
-        if (prev.find((v) => v.userId === socketRef.current.id)) return prev;
-        return [
-          ...prev,
-          {
-            userId: socketRef.current.id,
-            userName: user.name,
-            muted: false,
-          },
-        ];
-      });
-      toast.success("Joined voice chat!", {
-        style: {
-          background: "#111",
-          color: "#fff",
-          border: "1px solid rgba(249,115,22,0.2)",
-        },
-      });
-    } catch (err) {
-      console.error("Failed to get local voice stream", err);
-      toast.error("Microphone access is required for voice chat.", {
-        style: {
-          background: "#111",
-          color: "#fff",
-          border: "1px solid rgba(255, 0, 0, 0.2)",
-        },
-      });
-    }
-  };
-
-  const endVoiceChat = () => {
-    if (localVoiceStreamRef.current) {
-      localVoiceStreamRef.current.getTracks().forEach((track) => track.stop());
-    }
-    setLocalVoiceStream(null);
-    localVoiceStreamRef.current = null;
-    setIsInVoice(false);
-    isInVoiceRef.current = false;
-    setIsMuted(false);
-
-    Object.values(voicePeersRef.current).forEach((pc) => pc.close());
-    voicePeersRef.current = {};
-    setVoicePeers({});
-    setVoiceMembers([]);
-    voiceCandidateQueue.current = {};
-
-    socketRef.current.emit("leave-voice-chat", {roomId});
-    toast.success("Disconnected from voice chat.", {
-      style: {
-        background: "#111",
-        color: "#fff",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-      },
-    });
-  };
-
-  const toggleMuteVoice = () => {
-    if (localVoiceStreamRef.current) {
-      const nextMute = !isMuted;
-      localVoiceStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !nextMute;
-      });
-      setIsMuted(nextMute);
-      socketRef.current.emit("voice-mute-toggle", {roomId, muted: nextMute});
-
-      setVoiceMembers((prev) =>
-        prev.map((v) => (v.userId === socketRef.current.id ? {...v, muted: nextMute} : v))
-      );
-    }
-  };
 
   const handleKick = (targetId) => {
     socketRef.current.emit("kick-user", {roomId, targetId});
@@ -963,99 +619,9 @@ const RoomPage = () => {
     }
   };
 
-  const toggleVideoCallAudio = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsAudioMuted(!audioTrack.enabled);
-      }
-    }
-  };
 
-  const toggleVideoCallVideo = () => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoMuted(!videoTrack.enabled);
-      }
-    }
-  };
 
-  const startVideoCall = async (isInitiator = false, customVideoRoomId = null) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setLocalStream(stream);
-      localStreamRef.current = stream;
-      setIsInCall(true);
-      isInCallRef.current = true;
-      setIsAudioMuted(false);
-      setIsVideoMuted(false);
-      
-      const vRoomId = customVideoRoomId || `${roomId}-video`;
-      currentVideoRoomId.current = vRoomId;
-      setIsPrivateCall(vRoomId.includes("private-"));
-      socketRef.current.emit("join-video-call", {roomId: vRoomId});
 
-      if (isInitiator) {
-        socketRef.current.emit("start-video-call", {
-          roomId,
-          callerName: user.name,
-        });
-      }
-    } catch (err) {
-      console.error("Failed to get local stream", err);
-      alert("Microphone/Camera access required for video call.");
-    }
-  };
-
-  const endVideoCall = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-    }
-    setLocalStream(null);
-    localStreamRef.current = null;
-    setIsInCall(false);
-    isInCallRef.current = false;
-    setIsAudioMuted(false);
-    setIsVideoMuted(false);
-
-    Object.values(peersRef.current).forEach((pc) => pc.close());
-    peersRef.current = {};
-    setPeers({});
-    candidateQueue.current = {};
-    setIsPrivateCall(false);
-
-    socketRef.current.emit("leave-video-call", {roomId: currentVideoRoomId.current || `${roomId}-video`});
-    currentVideoRoomId.current = null;
-  };
-
-  const inviteToCall = async (targetId) => {
-    const myId = socketRef.current.id;
-    const privateRoomId = `private-${[myId, targetId].sort().join('-')}-video`;
-    
-    if (!isInCallRef.current) {
-      await startVideoCall(false, privateRoomId);
-    }
-    
-    socketRef.current.emit("invite-to-video-call", {
-      targetId,
-      callerName: user.name,
-      privateRoomId,
-    });
-    setShowMemberMenu(null);
-    toast.success("Invitation sent!", {
-      style: {
-        background: "#111",
-        color: "#fff",
-        border: "1px solid rgba(255,255,255,0.1)",
-      },
-    });
-  };
 
   const requestModAccess = () => {
     socketRef.current.emit("request-mod", {roomId, userName: user.name});
