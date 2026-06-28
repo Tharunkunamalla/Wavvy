@@ -864,7 +864,7 @@ const RoomPage = () => {
           {isInCall && (
             <div className="bg-[#141414] rounded-xl border border-white/5 p-4 shadow-lg flex gap-4 overflow-x-auto custom-scrollbar relative min-h-[160px] items-center">
               <div className="absolute right-4 top-4 z-10 flex gap-2">
-                {isPrivateCall && (
+                {isPrivateCall && !isHost && (
                   <>
                     <button
                       onClick={toggleVideoCallAudio}
