@@ -458,14 +458,21 @@ export const socketHandler = (io) => {
           const mainRoomId = roomId.slice(0, -6);
           io.to(mainRoomId).emit("user-left-voice", {userId: socket.id});
         } else if (roomId !== socket.id) {
-          setTimeout(async () => {
-            const members = await getRoomMembers(io, roomId);
-            io.to(roomId).emit("update-members", members);
-            
-            // Update active count in DB
-            await Room.findOneAndUpdate({ roomId }, { activeMembersCount: members.length });
+          if (socket.data.isHost) {
+            console.log(`[Host Left] Host socket ${socket.id} leaving room ${roomId}. Closing room.`);
+            socket.to(roomId).emit("kicked", "The host has left the room. The watch party is now closed.");
+            await Room.findOneAndDelete({ roomId });
             await broadcastPublicRooms(io);
-          }, 200);
+          } else {
+            setTimeout(async () => {
+              const members = await getRoomMembers(io, roomId);
+              io.to(roomId).emit("update-members", members);
+              
+              // Update active count in DB
+              await Room.findOneAndUpdate({ roomId }, { activeMembersCount: members.length });
+              await broadcastPublicRooms(io);
+            }, 200);
+          }
         }
       }
     });

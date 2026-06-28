@@ -193,8 +193,8 @@ const RoomPage = () => {
       setIsPublic(isPublic);
     });
 
-    socketRef.current.on("kicked", () => {
-      alert("You have been removed from the room.");
+    socketRef.current.on("kicked", (reason) => {
+      alert(reason || "You have been removed from the room.");
       navigate("/");
     });
 
