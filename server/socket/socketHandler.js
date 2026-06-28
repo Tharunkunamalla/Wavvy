@@ -54,7 +54,7 @@ export const socketHandler = (io) => {
   io.on("connection", (socket) => {
     console.log("Connected:", socket.id);
 
-    socket.on("join-room", async ({roomId, user}) => {
+    socket.on("join-room", async ({roomId, user, roomName, isPublic}) => {
       if (!user) return;
 
       try {
@@ -72,6 +72,8 @@ export const socketHandler = (io) => {
             roomId,
             hostId: socket.id,
             creatorEmail: user.email,
+            roomName: roomName || "Watch Party",
+            isPublic: isPublic || false,
             members: [{id: socket.id, name: user.name, email: user.email}],
           });
           socket.data.isHost = true;
@@ -98,6 +100,12 @@ export const socketHandler = (io) => {
         socket.emit("sync-playlist", room.playlist || []);
         socket.emit("sync-auto-play", room.autoPlayNext);
 
+        // Emit room metadata
+        socket.emit("room-metadata", {
+          roomName: room.roomName || "Watch Party",
+          isPublic: room.isPublic || false,
+        });
+
         // Emit chat history
         if (room.messages && room.messages.length > 0) {
           socket.emit("chat-history", room.messages);
@@ -110,6 +118,9 @@ export const socketHandler = (io) => {
         // Broadcast updated member list
         const members = await getRoomMembers(io, roomId);
         io.to(roomId).emit("update-members", members);
+
+        // Update active count in DB
+        await Room.findOneAndUpdate({ roomId }, { activeMembersCount: members.length });
       } catch (err) {
         console.error("Join room error:", err);
       }
@@ -437,6 +448,9 @@ export const socketHandler = (io) => {
           setTimeout(async () => {
             const members = await getRoomMembers(io, roomId);
             io.to(roomId).emit("update-members", members);
+            
+            // Update active count in DB
+            await Room.findOneAndUpdate({ roomId }, { activeMembersCount: members.length });
           }, 200);
         }
       }

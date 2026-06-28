@@ -14,6 +14,18 @@ const roomSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  roomName: {
+    type: String,
+    default: "Watch Party"
+  },
+  isPublic: {
+    type: Boolean,
+    default: false
+  },
+  activeMembersCount: {
+    type: Number,
+    default: 0
+  },
   videoUrl: {
     type: String,
     default: ''

@@ -22,4 +22,17 @@ router.get("/check-room", async (req, res) => {
   }
 });
 
+// API endpoint to get active public rooms
+router.get("/public-rooms", async (req, res) => {
+  try {
+    const rooms = await Room.find({ isPublic: true, activeMembersCount: { $gt: 0 } })
+      .select("roomId roomName creatorEmail activeMembersCount createdAt")
+      .sort({ activeMembersCount: -1, createdAt: -1 });
+    res.json(rooms);
+  } catch (error) {
+    console.error("Error fetching public rooms:", error);
+    res.status(500).json({error: "Server error"});
+  }
+});
+
 export default router;

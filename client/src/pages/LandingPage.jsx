@@ -20,6 +20,9 @@ import {API_BASE_URL} from "../lib/env";
 const LandingPage = () => {
   const [roomId, setRoomId] = useState("");
   const [roomName, setRoomName] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [publicRooms, setPublicRooms] = useState([]);
+  const [isLoadingPublic, setIsLoadingPublic] = useState(false);
   const [myRooms, setMyRooms] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [joinError, setJoinError] = useState("");
@@ -37,6 +40,27 @@ const LandingPage = () => {
     }
   }, [user?.email]);
 
+  useEffect(() => {
+    const fetchPublicRooms = async () => {
+      try {
+        setIsLoadingPublic(true);
+        const res = await fetch(`${API_BASE_URL}/public-rooms`);
+        if (res.ok) {
+          const data = await res.json();
+          setPublicRooms(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch public rooms:", err);
+      } finally {
+        setIsLoadingPublic(false);
+      }
+    };
+
+    fetchPublicRooms();
+    const interval = setInterval(fetchPublicRooms, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleCreateRoom = (e) => {
     e.preventDefault();
     if (!user) return navigate("/login");
@@ -46,11 +70,17 @@ const LandingPage = () => {
     const newRoom = {
       id: newRoomId,
       name: roomName.trim(),
+      isPublic: isPublic,
       createdAt: new Date().toISOString(),
     };
     const updatedRooms = [newRoom, ...myRooms];
     localStorage.setItem(`myRooms_${user.email}`, JSON.stringify(updatedRooms));
-    navigate(`/room/${newRoomId}`, {state: {roomName: roomName.trim()}});
+    navigate(`/room/${newRoomId}`, {
+      state: { roomName: roomName.trim(), isPublic: isPublic }
+    });
+    setRoomName("");
+    setIsPublic(false);
+    setShowCreateModal(false);
   };
 
   const handleJoinRoom = async (e) => {
@@ -375,6 +405,58 @@ const LandingPage = () => {
         )}
       </main>
 
+      {/* Active Public Watch Parties Section */}
+      {publicRooms.length > 0 && (
+        <section className="max-w-7xl w-full mx-auto px-8 pb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="relative flex items-center justify-center">
+              <span className="absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75 animate-ping"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </div>
+            <h2 className="text-xl font-bold tracking-tight ml-2">Active Public Rooms</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {publicRooms.map((room) => (
+              <div
+                key={room.roomId}
+                onClick={() => navigate(`/room/${room.roomId}`)}
+                className="bg-zinc-950 p-6 rounded-3xl border border-white/5 hover:border-primary/50 transition-all cursor-pointer flex flex-col gap-5 shadow-2xl hover:shadow-primary/5 relative overflow-hidden group"
+              >
+                {/* Glowing top border indicator */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="flex items-start justify-between">
+                  <h4 className="font-brand text-lg text-white font-black italic truncate max-w-[65%]">
+                    {room.roomName || "Watch Party"}
+                  </h4>
+                  <span className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-500 text-[10px] font-black uppercase px-2.5 py-1 rounded-full shrink-0">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    {room.activeMembersCount} Watching
+                  </span>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs text-white/40">
+                    <Users size={14} className="text-primary/60" />
+                    <span className="truncate">Host: {room.creatorEmail ? room.creatorEmail.split('@')[0] : "Guest"}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-xs text-white/40">
+                    <Clock size={14} className="text-primary/60" />
+                    <span>Live now</span>
+                  </div>
+                </div>
+
+                <div className="mt-2 w-full py-3 bg-primary/10 group-hover:bg-primary text-primary group-hover:text-black font-black rounded-xl text-xs uppercase tracking-widest text-center transition-all flex items-center justify-center gap-2 border border-primary/20 group-hover:border-transparent">
+                  Join Watch Party
+                  <Play size={10} fill="currentColor" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Recently Created Rooms Section */}
       {user && myRooms.length > 0 && (
         <section className="max-w-7xl w-full mx-auto px-8 pb-20">
@@ -460,18 +542,60 @@ const LandingPage = () => {
               Choose a name for your watch party
             </p>
             <form onSubmit={handleCreateRoom} className="space-y-6">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Enter room name (e.g. Movie Night)"
-                className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 focus:outline-none focus:border-primary/50 transition-all text-lg font-bold"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-              />
-              <div className="flex gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-wider text-white/40">Room Title</label>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Enter room name (e.g. Movie Night)"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-8 focus:outline-none focus:border-primary/50 transition-all text-lg font-bold"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-wider text-white/40">Room Visibility</label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsPublic(false)}
+                    className={`flex-1 py-4 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      !isPublic
+                        ? "bg-zinc-800 border-primary text-primary"
+                        : "bg-transparent border-white/10 text-white/40 hover:text-white"
+                    }`}
+                  >
+                    🔒 Private
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPublic(true)}
+                    className={`flex-1 py-4 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      isPublic
+                        ? "bg-zinc-800 border-primary text-primary"
+                        : "bg-transparent border-white/10 text-white/40 hover:text-white"
+                    }`}
+                  >
+                    🌐 Public
+                  </button>
+                </div>
+                <p className="text-[10px] text-white/30 font-medium">
+                  {isPublic 
+                    ? "Anyone can discover and join this room from the home exploration lobby." 
+                    : "Only people with the direct Room ID or link can join."}
+                </p>
+              </div>
+
+              <div className="flex gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setRoomName("");
+                    setIsPublic(false);
+                  }}
                   className="flex-1 bg-white/5 hover:bg-white/10 text-white font-black py-5 rounded-2xl transition-all cursor-pointer"
                 >
                   Cancel

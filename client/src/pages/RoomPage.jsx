@@ -41,6 +41,8 @@ const RoomPage = () => {
   const isSyncing = useRef(false);
   const scrollRef = useRef();
 
+  const [roomName, setRoomName] = useState(location.state?.roomName || "");
+  const [isPublic, setIsPublic] = useState(location.state?.isPublic || false);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [showInfo, setShowInfo] = useState(false);
@@ -138,7 +140,12 @@ const RoomPage = () => {
           border: "1px solid rgba(249,115,22,0.2)",
         }
       });
-      socketRef.current.emit("join-room", {roomId, user});
+      socketRef.current.emit("join-room", {
+        roomId,
+        user,
+        roomName: location.state?.roomName || "",
+        isPublic: location.state?.isPublic || false
+      });
     });
 
     socketRef.current.on("disconnect", () => {
@@ -179,6 +186,11 @@ const RoomPage = () => {
 
     socketRef.current.on("sync-playlist", (list) => {
       setPlaylist(list || []);
+    });
+
+    socketRef.current.on("room-metadata", ({roomName, isPublic}) => {
+      setRoomName(roomName);
+      setIsPublic(isPublic);
     });
 
     socketRef.current.on("kicked", () => {
@@ -990,6 +1002,11 @@ const RoomPage = () => {
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium text-white/40">
+            {roomName && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-white/80 font-bold">
+                {isPublic ? "🌐" : "🔒"} {roomName}
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Copy
                 size={12}
