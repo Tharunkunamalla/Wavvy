@@ -79,6 +79,7 @@ const RoomPage = () => {
   const isInCallRef = useRef(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
+  const [isPrivateCall, setIsPrivateCall] = useState(false);
 
   // Voice Chat WebRTC State
   const [isInVoice, setIsInVoice] = useState(false);
@@ -997,6 +998,7 @@ const RoomPage = () => {
       
       const vRoomId = customVideoRoomId || `${roomId}-video`;
       currentVideoRoomId.current = vRoomId;
+      setIsPrivateCall(vRoomId.includes("private-"));
       socketRef.current.emit("join-video-call", {roomId: vRoomId});
 
       if (isInitiator) {
@@ -1026,6 +1028,7 @@ const RoomPage = () => {
     peersRef.current = {};
     setPeers({});
     candidateQueue.current = {};
+    setIsPrivateCall(false);
 
     socketRef.current.emit("leave-video-call", {roomId: currentVideoRoomId.current || `${roomId}-video`});
     currentVideoRoomId.current = null;
@@ -1293,50 +1296,92 @@ const RoomPage = () => {
 
           {/* Native WebRTC Video Call Grid */}
           {isInCall && (
-            <div className="bg-[#141414] rounded-xl border border-white/5 p-4 shadow-lg flex gap-4 overflow-x-auto custom-scrollbar relative">
-              <button
-                onClick={endVideoCall}
-                className="absolute right-4 top-4 z-10 bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer"
-                title="End Call"
-              >
-                <X size={16} />
-              </button>
-              <div className="w-48 h-32 shrink-0 relative bg-black rounded-lg overflow-hidden border border-white/10 group">
-                {localStream ? (
-                  <PeerVideo stream={localStream} isLocal={true} />
-                ) : (
-                  <div className="h-full flex items-center justify-center">
-                    <Video className="text-white/20 animate-pulse" />
-                  </div>
+            <div className="bg-[#141414] rounded-xl border border-white/5 p-4 shadow-lg flex gap-4 overflow-x-auto custom-scrollbar relative min-h-[160px] items-center">
+              <div className="absolute right-4 top-4 z-10 flex gap-2">
+                {isPrivateCall && (
+                  <>
+                    <button
+                      onClick={toggleVideoCallAudio}
+                      className={`p-2 rounded-full cursor-pointer transition-transform hover:scale-110 ${
+                        isAudioMuted ? "bg-red-500 text-white" : "bg-zinc-800/80 hover:bg-zinc-800 text-white"
+                      }`}
+                      title={isAudioMuted ? "Unmute Mic" : "Mute Mic"}
+                    >
+                      {isAudioMuted ? <MicOff size={14} /> : <Mic size={14} />}
+                    </button>
+                    <button
+                      onClick={toggleVideoCallVideo}
+                      className={`p-2 rounded-full cursor-pointer transition-transform hover:scale-110 ${
+                        isVideoMuted ? "bg-red-500 text-white" : "bg-zinc-800/80 hover:bg-zinc-800 text-white"
+                      }`}
+                      title={isVideoMuted ? "Turn Camera On" : "Turn Camera Off"}
+                    >
+                      {isVideoMuted ? <VideoOff size={14} /> : <Video size={14} />}
+                    </button>
+                  </>
                 )}
-                <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm z-10">
-                  You
-                </div>
-                
-                {/* Local controls overlay visible on hover */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-300 z-20">
-                  <button
-                    onClick={toggleVideoCallAudio}
-                    className={`p-2 rounded-full cursor-pointer transition-all hover:scale-110 ${
-                      isAudioMuted ? "bg-red-500 text-white" : "bg-black/60 hover:bg-black/80 text-white"
-                    }`}
-                    title={isAudioMuted ? "Unmute Mic" : "Mute Mic"}
-                  >
-                    {isAudioMuted ? <MicOff size={14} /> : <Mic size={14} />}
-                  </button>
-                  <button
-                    onClick={toggleVideoCallVideo}
-                    className={`p-2 rounded-full cursor-pointer transition-all hover:scale-110 ${
-                      isVideoMuted ? "bg-red-500 text-white" : "bg-black/60 hover:bg-black/80 text-white"
-                    }`}
-                    title={isVideoMuted ? "Turn Camera On" : "Turn Camera Off"}
-                  >
-                    {isVideoMuted ? <VideoOff size={14} /> : <Video size={14} />}
-                  </button>
-                </div>
+                <button
+                  onClick={endVideoCall}
+                  className="bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110 cursor-pointer"
+                  title="End Call"
+                >
+                  <X size={16} />
+                </button>
               </div>
+
+              {isPrivateCall && Object.keys(peers).length === 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center text-white/40 text-xs font-semibold py-8 animate-pulse">
+                  <Video size={20} className="mb-2 text-primary animate-bounce" />
+                  Waiting for partner to join...
+                </div>
+              )}
+
+              {!isPrivateCall && (
+                <div className="w-48 h-32 shrink-0 relative bg-black rounded-lg overflow-hidden border border-white/10 group">
+                  {localStream ? (
+                    <PeerVideo stream={localStream} isLocal={true} />
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <Video className="text-white/20 animate-pulse" />
+                    </div>
+                  )}
+                  <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm z-10">
+                    You
+                  </div>
+                  
+                  {/* Local controls overlay visible on hover */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-300 z-20">
+                    <button
+                      onClick={toggleVideoCallAudio}
+                      className={`p-2 rounded-full cursor-pointer transition-all hover:scale-110 ${
+                        isAudioMuted ? "bg-red-500 text-white" : "bg-black/60 hover:bg-black/80 text-white"
+                      }`}
+                      title={isAudioMuted ? "Unmute Mic" : "Mute Mic"}
+                    >
+                      {isAudioMuted ? <MicOff size={14} /> : <Mic size={14} />}
+                    </button>
+                    <button
+                      onClick={toggleVideoCallVideo}
+                      className={`p-2 rounded-full cursor-pointer transition-all hover:scale-110 ${
+                        isVideoMuted ? "bg-red-500 text-white" : "bg-black/60 hover:bg-black/80 text-white"
+                      }`}
+                      title={isVideoMuted ? "Turn Camera On" : "Turn Camera Off"}
+                    >
+                      {isVideoMuted ? <VideoOff size={14} /> : <Video size={14} />}
+                    </button>
+                  </div>
+                </div>
+              )}
               {Object.entries(peers).map(([peerId, stream]) => {
                 const peerName = members.find((m) => m.id === peerId)?.name || "Peer";
+                
+                // Determine label dynamically for private 1-on-1 calls vs group calls
+                const isPrivate = currentVideoRoomId.current && currentVideoRoomId.current.includes("private-");
+                let displayName = peerName;
+                if (isPrivate) {
+                  displayName = isHost ? peerName : "You";
+                }
+
                 return (
                   <div
                     key={peerId}
@@ -1344,7 +1389,7 @@ const RoomPage = () => {
                   >
                     <PeerVideo stream={stream} isLocal={false} />
                     <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm">
-                      {peerName}
+                      {displayName}
                     </div>
                   </div>
                 );
