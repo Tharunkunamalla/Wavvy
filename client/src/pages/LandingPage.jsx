@@ -358,7 +358,7 @@ const LandingPage = () => {
             </div>
           </>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-12">
             {/* Welcome Text */}
             <div className="space-y-2">
               <h1 className="text-5xl font-brand tracking-wide drop-shadow-lg flex items-center gap-3">
@@ -419,107 +419,119 @@ const LandingPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Section 1: Open Watch Parties (Discoverable Rooms) */}
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center gap-2">
+                <div className="relative flex items-center justify-center">
+                  <span className="absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75 animate-ping"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </div>
+                <h2 className="text-xl font-bold tracking-tight ml-2">Open Rooms</h2>
+              </div>
+              
+              {publicRooms.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {publicRooms.map((room) => (
+                    <div
+                      key={room.roomId}
+                      onClick={() => navigate(`/room/${room.roomId}`)}
+                      className="bg-zinc-950 p-6 rounded-3xl border border-white/5 hover:border-primary/50 transition-all cursor-pointer flex flex-col gap-5 shadow-2xl hover:shadow-primary/5 relative overflow-hidden group"
+                    >
+                      {/* Glowing top border indicator */}
+                      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-brand text-lg text-white font-black italic truncate max-w-[65%]">
+                          {room.roomName || "Watch Party"}
+                        </h4>
+                        <span className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-500 text-[10px] font-black uppercase px-2.5 py-1 rounded-full shrink-0">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                          {room.activeMembersCount} Watching
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-xs text-white/40">
+                          <Users size={14} className="text-primary/60" />
+                          <span className="truncate">Host: {room.creatorEmail ? room.creatorEmail.split('@')[0] : "Guest"}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs text-white/40">
+                          <Clock size={14} className="text-primary/60" />
+                          <span>Live now</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 w-full py-3 bg-primary/10 group-hover:bg-primary text-primary group-hover:text-black font-black rounded-xl text-xs uppercase tracking-widest text-center transition-all flex items-center justify-center gap-2 border border-primary/20 group-hover:border-transparent">
+                        Join Watch Party
+                        <Play size={10} fill="currentColor" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-[#111] border border-white/5 rounded-3xl p-10 text-center text-white/40 font-medium">
+                  <p className="text-sm">No public watch parties are active right now.</p>
+                  <p className="text-xs mt-1 text-white/20">Create a public room above to start the first party!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Section 2: My Rooms */}
+            <div className="space-y-6 pt-4">
+              <div className="flex items-center gap-2">
+                <Video className="text-white" size={22} fill="none" />
+                <h2 className="text-xl font-bold tracking-tight">My Rooms</h2>
+              </div>
+
+              {myRooms.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {myRooms.map((room) => (
+                    <div
+                      key={room.id}
+                      onClick={() => navigate(`/room/${room.id}`)}
+                      className="bg-[#111] p-5 rounded-2xl border border-white/5 hover:border-orange-500 transition-all cursor-pointer flex flex-col gap-4 relative group"
+                    >
+                      <button
+                        onClick={(e) => handleDeleteRoom(e, room.id)}
+                        className="absolute right-4 top-4 text-white/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <h4 className="font-bold text-lg text-white pr-6">
+                        {room.name || "Untitled Room"}
+                      </h4>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 text-xs text-white/50">
+                          <Clock size={14} />
+                          <span>
+                            Created{" "}
+                            {new Date(room.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-white/50">
+                          <Video size={14} />
+                          <span>Video loaded</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-[#111] border border-white/5 rounded-3xl p-10 text-center text-white/40 font-medium">
+                  <p className="text-sm">You haven't visited any rooms yet.</p>
+                  <p className="text-xs mt-1 text-white/20">Rooms you create or join will appear here.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
-
-      {/* Active Public Watch Parties Section */}
-      {publicRooms.length > 0 && (
-        <section className="max-w-7xl w-full mx-auto px-8 pb-12">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="relative flex items-center justify-center">
-              <span className="absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75 animate-ping"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-            </div>
-            <h2 className="text-xl font-bold tracking-tight ml-2">Active Public Rooms</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {publicRooms.map((room) => (
-              <div
-                key={room.roomId}
-                onClick={() => navigate(`/room/${room.roomId}`)}
-                className="bg-zinc-950 p-6 rounded-3xl border border-white/5 hover:border-primary/50 transition-all cursor-pointer flex flex-col gap-5 shadow-2xl hover:shadow-primary/5 relative overflow-hidden group"
-              >
-                {/* Glowing top border indicator */}
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                <div className="flex items-start justify-between">
-                  <h4 className="font-brand text-lg text-white font-black italic truncate max-w-[65%]">
-                    {room.roomName || "Watch Party"}
-                  </h4>
-                  <span className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-500 text-[10px] font-black uppercase px-2.5 py-1 rounded-full shrink-0">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                    {room.activeMembersCount} Watching
-                  </span>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-xs text-white/40">
-                    <Users size={14} className="text-primary/60" />
-                    <span className="truncate">Host: {room.creatorEmail ? room.creatorEmail.split('@')[0] : "Guest"}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-xs text-white/40">
-                    <Clock size={14} className="text-primary/60" />
-                    <span>Live now</span>
-                  </div>
-                </div>
-
-                <div className="mt-2 w-full py-3 bg-primary/10 group-hover:bg-primary text-primary group-hover:text-black font-black rounded-xl text-xs uppercase tracking-widest text-center transition-all flex items-center justify-center gap-2 border border-primary/20 group-hover:border-transparent">
-                  Join Watch Party
-                  <Play size={10} fill="currentColor" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Recently Created Rooms Section */}
-      {user && myRooms.length > 0 && (
-        <section className="max-w-7xl w-full mx-auto px-8 pb-20">
-          <div className="flex items-center gap-2 mb-6">
-            <Video className="text-white" size={22} fill="none" />
-            <h2 className="text-xl font-bold tracking-tight">My Rooms</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {myRooms.map((room) => (
-              <div
-                key={room.id}
-                onClick={() => navigate(`/room/${room.id}`)}
-                className="bg-[#111] p-5 rounded-2xl border border-white/5 hover:border-orange-500 transition-all cursor-pointer flex flex-col gap-4 relative group"
-              >
-                <button
-                  onClick={(e) => handleDeleteRoom(e, room.id)}
-                  className="absolute right-4 top-4 text-white/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                >
-                  <Trash2 size={16} />
-                </button>
-                <h4 className="font-bold text-lg text-white pr-6">
-                  {room.name || "Untitled Room"}
-                </h4>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-xs text-white/50">
-                    <Clock size={14} />
-                    <span>
-                      Created{" "}
-                      {new Date(room.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-white/50">
-                    <Video size={14} />
-                    <span>Video loaded</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Footer */}
       <footer className="py-12 px-8 flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto border-t border-white/5">
