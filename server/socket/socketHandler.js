@@ -362,8 +362,9 @@ export const socketHandler = (io) => {
     });
 
     socket.on("join-video-call", ({roomId}) => {
-      socket.join(`${roomId}-video`);
-      socket.to(`${roomId}-video`).emit("user-joined-video", {
+      const targetRoom = roomId.includes("-video") ? roomId : `${roomId}-video`;
+      socket.join(targetRoom);
+      socket.to(targetRoom).emit("user-joined-video", {
         userId: socket.id,
         userName: socket.data.name,
       });
@@ -380,10 +381,11 @@ export const socketHandler = (io) => {
       });
     });
 
-    socket.on("invite-to-video-call", ({targetId, callerName}) => {
+    socket.on("invite-to-video-call", ({targetId, callerName, privateRoomId}) => {
       io.to(targetId).emit("incoming-video-call", {
         callerName,
         callerId: socket.id,
+        privateRoomId,
       });
     });
 
@@ -400,8 +402,9 @@ export const socketHandler = (io) => {
     });
 
     socket.on("leave-video-call", ({roomId}) => {
-      socket.leave(`${roomId}-video`);
-      socket.to(`${roomId}-video`).emit("user-left-video", {userId: socket.id});
+      const targetRoom = roomId.includes("-video") ? roomId : `${roomId}-video`;
+      socket.leave(targetRoom);
+      socket.to(targetRoom).emit("user-left-video", {userId: socket.id});
     });
 
     // --- Live Emoji Reactions ---

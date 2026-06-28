@@ -44,6 +44,7 @@ const RoomPage = () => {
   // WebRTC Candidate Queues to handle asynchronous signaling ordering
   const candidateQueue = useRef({});
   const voiceCandidateQueue = useRef({});
+  const currentVideoRoomId = useRef(null);
 
   const [roomName, setRoomName] = useState(location.state?.roomName || "");
   const [isPublic, setIsPublic] = useState(location.state?.isPublic || false);
@@ -202,7 +203,7 @@ const RoomPage = () => {
       navigate("/");
     });
 
-    socketRef.current.on("incoming-video-call", ({callerName, callerId}) => {
+    socketRef.current.on("incoming-video-call", ({callerName, callerId, privateRoomId}) => {
       toast(
         (t) => (
           <div className="flex flex-col gap-3 p-1 font-sans">
@@ -221,7 +222,7 @@ const RoomPage = () => {
               <button
                 onClick={() => {
                   toast.dismiss(t.id);
-                  startVideoCall(false);
+                  startVideoCall(false, privateRoomId);
                   socketRef.current.emit("video-invite-response", {
                     targetId: callerId,
                     accepted: true,
@@ -981,7 +982,7 @@ const RoomPage = () => {
     }
   };
 
-  const startVideoCall = async (isInitiator = false) => {
+  const startVideoCall = async (isInitiator = false, customVideoRoomId = null) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -993,7 +994,10 @@ const RoomPage = () => {
       isInCallRef.current = true;
       setIsAudioMuted(false);
       setIsVideoMuted(false);
-      socketRef.current.emit("join-video-call", {roomId});
+      
+      const vRoomId = customVideoRoomId || `${roomId}-video`;
+      currentVideoRoomId.current = vRoomId;
+      socketRef.current.emit("join-video-call", {roomId: vRoomId});
 
       if (isInitiator) {
         socketRef.current.emit("start-video-call", {
@@ -1023,16 +1027,22 @@ const RoomPage = () => {
     setPeers({});
     candidateQueue.current = {};
 
-    socketRef.current.emit("leave-video-call", {roomId});
+    socketRef.current.emit("leave-video-call", {roomId: currentVideoRoomId.current || `${roomId}-video`});
+    currentVideoRoomId.current = null;
   };
 
   const inviteToCall = async (targetId) => {
+    const myId = socketRef.current.id;
+    const privateRoomId = `private-${[myId, targetId].sort().join('-')}-video`;
+    
     if (!isInCallRef.current) {
-      await startVideoCall(false);
+      await startVideoCall(false, privateRoomId);
     }
+    
     socketRef.current.emit("invite-to-video-call", {
       targetId,
       callerName: user.name,
+      privateRoomId,
     });
     setShowMemberMenu(null);
     toast.success("Invitation sent!", {
