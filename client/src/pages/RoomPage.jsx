@@ -40,6 +40,10 @@ const RoomPage = () => {
   const playerRef = useRef(null);
   const isSyncing = useRef(false);
   const scrollRef = useRef();
+  
+  // WebRTC Candidate Queues to handle asynchronous signaling ordering
+  const candidateQueue = useRef({});
+  const voiceCandidateQueue = useRef({});
 
   const [roomName, setRoomName] = useState(location.state?.roomName || "");
   const [isPublic, setIsPublic] = useState(location.state?.isPublic || false);
@@ -419,19 +423,50 @@ const RoomPage = () => {
         caller: socketRef.current.id,
         sdp: answer,
       });
+
+      // Process queued candidates
+      const queue = candidateQueue.current[caller] || [];
+      for (const candidate of queue) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error("Error adding queued video ice candidate:", e);
+        }
+      }
+      candidateQueue.current[caller] = [];
     });
 
     socketRef.current.on("video-answer", async ({caller, sdp}) => {
       const pc = peersRef.current[caller];
       if (pc) {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+        // Process queued candidates
+        const queue = candidateQueue.current[caller] || [];
+        for (const candidate of queue) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.error("Error adding queued video ice candidate:", e);
+          }
+        }
+        candidateQueue.current[caller] = [];
       }
     });
 
     socketRef.current.on("video-ice-candidate", async ({caller, candidate}) => {
       const pc = peersRef.current[caller];
-      if (pc) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      if (pc && pc.remoteDescription) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error("Error adding video ice candidate:", e);
+        }
+      } else {
+        if (!candidateQueue.current[caller]) {
+          candidateQueue.current[caller] = [];
+        }
+        candidateQueue.current[caller].push(candidate);
       }
     });
 
@@ -538,6 +573,17 @@ const RoomPage = () => {
         caller: socketRef.current.id,
         sdp: answer,
       });
+
+      // Process queued candidates
+      const queue = voiceCandidateQueue.current[caller] || [];
+      for (const candidate of queue) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error("Error adding queued voice ice candidate:", e);
+        }
+      }
+      voiceCandidateQueue.current[caller] = [];
     });
 
     socketRef.current.on("voice-answer", async ({caller, sdp}) => {
@@ -545,13 +591,33 @@ const RoomPage = () => {
       const pc = voicePeersRef.current[caller];
       if (pc) {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+        // Process queued candidates
+        const queue = voiceCandidateQueue.current[caller] || [];
+        for (const candidate of queue) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.error("Error adding queued voice ice candidate:", e);
+          }
+        }
+        voiceCandidateQueue.current[caller] = [];
       }
     });
 
     socketRef.current.on("voice-ice-candidate", async ({caller, candidate}) => {
       const pc = voicePeersRef.current[caller];
-      if (pc) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      if (pc && pc.remoteDescription) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error("Error adding voice ice candidate:", e);
+        }
+      } else {
+        if (!voiceCandidateQueue.current[caller]) {
+          voiceCandidateQueue.current[caller] = [];
+        }
+        voiceCandidateQueue.current[caller].push(candidate);
       }
     });
 
@@ -740,6 +806,7 @@ const RoomPage = () => {
     voicePeersRef.current = {};
     setVoicePeers({});
     setVoiceMembers([]);
+    voiceCandidateQueue.current = {};
 
     socketRef.current.emit("leave-voice-chat", {roomId});
     toast.success("Disconnected from voice chat.", {
@@ -954,11 +1021,15 @@ const RoomPage = () => {
     Object.values(peersRef.current).forEach((pc) => pc.close());
     peersRef.current = {};
     setPeers({});
+    candidateQueue.current = {};
 
     socketRef.current.emit("leave-video-call", {roomId});
   };
 
-  const inviteToCall = (targetId) => {
+  const inviteToCall = async (targetId) => {
+    if (!isInCallRef.current) {
+      await startVideoCall(false);
+    }
     socketRef.current.emit("invite-to-video-call", {
       targetId,
       callerName: user.name,
