@@ -902,15 +902,9 @@ const RoomPage = () => {
                 </div>
               )}
 
-              {!isPrivateCall && (
+              {localStream && (
                 <div className="w-48 h-32 shrink-0 relative bg-black rounded-lg overflow-hidden border border-white/10 group">
-                  {localStream ? (
-                    <PeerVideo stream={localStream} isLocal={true} />
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <Video className="text-white/20 animate-pulse" />
-                    </div>
-                  )}
+                  <PeerVideo stream={localStream} isLocal={true} />
                   <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white/80 backdrop-blur-sm z-10">
                     You
                   </div>

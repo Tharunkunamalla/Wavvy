@@ -15,14 +15,21 @@ export const useWebRTCCall = (socketRef, roomId, user, members) => {
   const candidateQueue = useRef({});
   const currentVideoRoomId = useRef(null);
 
-  const startVideoCall = async (isInitiator = false, customVideoRoomId = null) => {
+  const startVideoCall = async (isInitiator = false, customVideoRoomId = null, isPrivateCallInitiator = false) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setLocalStream(stream);
-      localStreamRef.current = stream;
+      let stream = null;
+      if (!isPrivateCallInitiator) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        setLocalStream(stream);
+        localStreamRef.current = stream;
+      } else {
+        setLocalStream(null);
+        localStreamRef.current = null;
+      }
+      
       setIsInCall(true);
       isInCallRef.current = true;
       setIsAudioMuted(false);
@@ -76,7 +83,7 @@ export const useWebRTCCall = (socketRef, roomId, user, members) => {
     const privateRoomId = `private-${[myId, targetId].sort().join("-")}-video`;
     
     if (!isInCallRef.current) {
-      await startVideoCall(false, privateRoomId);
+      await startVideoCall(false, privateRoomId, true);
     }
     
     socketRef.current?.emit("invite-to-video-call", {
