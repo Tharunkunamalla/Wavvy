@@ -249,12 +249,17 @@ export const useWebRTCVoice = (socketRef, roomId, user, members) => {
       );
     };
 
+    const handleSyncVoiceMembers = (list) => {
+      setVoiceMembers(list || []);
+    };
+
     socket.on("user-joined-voice", handleUserJoinedVoice);
     socket.on("voice-offer", handleVoiceOffer);
     socket.on("voice-answer", handleVoiceAnswer);
     socket.on("voice-ice-candidate", handleVoiceIceCandidate);
     socket.on("user-left-voice", handleUserLeftVoice);
     socket.on("user-voice-mute-updated", handleUserVoiceMuteUpdated);
+    socket.on("sync-voice-members", handleSyncVoiceMembers);
 
     return () => {
       socket.off("user-joined-voice", handleUserJoinedVoice);
@@ -263,6 +268,7 @@ export const useWebRTCVoice = (socketRef, roomId, user, members) => {
       socket.off("voice-ice-candidate", handleVoiceIceCandidate);
       socket.off("user-left-voice", handleUserLeftVoice);
       socket.off("user-voice-mute-updated", handleUserVoiceMuteUpdated);
+      socket.off("sync-voice-members", handleSyncVoiceMembers);
     };
   }, [socketRef.current, members]);
 
