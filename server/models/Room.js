@@ -16,7 +16,7 @@ const roomSchema = new mongoose.Schema({
   },
   roomName: {
     type: String,
-    default: "Watch Party"
+    default: "Wavvy-Room"
   },
   isPublic: {
     type: Boolean,
