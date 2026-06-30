@@ -291,7 +291,7 @@ const About = () => {
             </button>
 
             <p className="text-gray-500 mt-10 text-sm">
-              © 2026 Wavvy. Watch together, wherever you are.
+              &copy; 2026 Wavvy. Watch together, wherever you are.
             </p>
           </section>
         </div>
